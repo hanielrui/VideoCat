@@ -39,6 +39,10 @@ jobs:
           # 手动复制 Swift 标准库（关键！）
           /Applications/Xcode_15.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-stdlib-tool --copy --verbose --scan-executable "$APP/$PROJECT" --scan-folder "$APP/Frameworks" --platform iphoneos --destination "$APP/Frameworks"
 
+          # 检查是否成功复制
+          echo "=== Frameworks 目录内容 ==="
+          ls -la "$APP/Frameworks"
+
           chmod +x "$APP/$PROJECT"
           rm -rf "$APP/_CodeSignature" "$APP/embedded.mobileprovision"
 
@@ -48,7 +52,7 @@ jobs:
 
           # 显示最终 IPA 大小
           ls -lh "$PROJECT.ipa"
-          unzip -l "$PROJECT.ipa" | head -30
+          unzip -l "$PROJECT.ipa"
 
       - name: Upload
         uses: actions/upload-artifact@v4
