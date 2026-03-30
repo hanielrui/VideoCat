@@ -1,7 +1,5 @@
-name: TrollStore IPA ✅ FINAL
+name: Build for TrollStore
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -10,33 +8,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 🔥 唯一能导出完整 app 的方式：archive + 假签名
       - name: Archive
         run: |
           xcodebuild archive \
             -project VideoPlayer.xcodeproj \
             -scheme VideoPlayer \
-            -configuration Release \
-            -destination generic/platform=iOS \
-            -archivePath app.xcarchive \
-            CODE_SIGN_IDENTITY="-" \
-            CODE_SIGNING_ALLOWED=YES \
-            CODE_SIGNING_REQUIRED=NO
+            -destination 'generic/platform=iOS' \
+            -archivePath VideoPlayer.xcarchive \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
 
-      # 🔥 直接从 xcarchive 取 app（100% 存在）
-      - name: Make IPA
+      - name: Pack IPA
         run: |
-          APP="app.xcarchive/Products/Applications/VideoPlayer.app"
-          
-          ls -la "$APP"
-          du -sh "$APP"
+          APP_PATH="VideoPlayer.xcarchive/Products/Applications/VideoPlayer.app"
+
+          ls -lh "$APP_PATH"
+          du -sh "$APP_PATH"
 
           mkdir -p Payload
-          cp -R "$APP" Payload/
+          cp -R "$APP_PATH" Payload/
           zip -ry VideoPlayer-Troll.ipa Payload
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: VideoPlayer-Troll
-          path: VideoPlayer-Troll.ipa
+          name: VideoPlayer-TrollStore
+          path: "*.ipa"
