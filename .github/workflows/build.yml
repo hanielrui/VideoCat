@@ -1,4 +1,4 @@
-name: Build iOS ADHOC (No Account)
+name: Build REAL iOS IPA (NO ACCOUNT)
 on:
   push:
     branches: [main]
@@ -10,38 +10,43 @@ env:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build with ADHOC Signing (REAL FULL IPA)
+      # 🔥 关键：开启临时签名，让 Xcode 生成完整 app
+      - name: Archive With Fake Signing
         run: |
           xcodebuild archive \
             -project "$PROJECT.xcodeproj" \
             -scheme "$SCHEME" \
             -configuration Release \
             -destination generic/platform=iOS \
-            -archivePath "$PROJECT.xcarchive" \
+            -archivePath output.xcarchive \
+            CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_ALLOWED=YES \
-            CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO \
             AD_HOC_CODE_SIGNING_ALLOWED=YES
 
-      - name: Package IPA
+      # 🔥 打包完整大小 IPA
+      - name: Package Final IPA
         run: |
-          APP="$PROJECT.xcarchive/Products/Applications/$PROJECT.app"
+          APP="output.xcarchive/Products/Applications/$PROJECT.app"
+          
           ls -lh "$APP"
           du -sh "$APP"
 
-          chmod +x "$APP/$PROJECT"
+          # 移除假签名
           rm -rf "$APP/_CodeSignature" "$APP/embedded.mobileprovision"
+          chmod +x "$APP/$PROJECT"
 
+          # 打包
           mkdir -p Payload
           cp -R "$APP" Payload/
-          zip -ryq "$PROJECT.ipa" Payload
+          zip -ryq VideoPlayer.ipa Payload
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: VideoPlayer-FINAL
-          path: "*.ipa"
+          path: VideoPlayer.ipa
