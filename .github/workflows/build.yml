@@ -16,7 +16,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      # 👇 强制输出产物到当前目录！！！
       - name: Build Release
         run: |
           xcodebuild build \
@@ -25,28 +24,28 @@ jobs:
             -configuration Release \
             -destination "generic/platform=iOS" \
             BUILD_DIR="./build" \
-            BUILD_ROOT="./build" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
 
-      # 👇 从 ./build 搜索，100% 找到！
-      - name: Find & Pack IPA
+      # 👇 👇 👇 直接用日志里的真实路径！！
+      - name: Package IPA
         run: |
-          APP_PATH=$(find ./build -name "*.app" -type d | head -1)
-          echo "✅ 找到真实 App：$APP_PATH"
+          APP_PATH="./build/Build/Products/Release-iphoneos/VideoPlayer.app"
+          echo "✅ 使用固定路径: $APP_PATH"
 
-          # 检查大小
+          # 检查是否存在
+          ls -la "$APP_PATH"
           du -sh "$APP_PATH"
 
           # 权限
-          chmod +x "$APP_PATH/$PROJECT_NAME"
+          chmod +x "$APP_PATH/VideoPlayer"
 
           # 清理签名
           rm -rf "$APP_PATH/_CodeSignature"
           rm -f "$APP_PATH/embedded.mobileprovision"
 
-          # 打包 IPA
+          # 打包
           mkdir -p Payload
           cp -R "$APP_PATH" Payload/
           zip -ryq VideoPlayer.ipa Payload
