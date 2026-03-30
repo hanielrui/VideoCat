@@ -1,4 +1,4 @@
-name: Build for TrollStore (Full IPA)
+name: Build for TrollStore ✅ FINAL
 on:
   push:
     branches: [main]
@@ -10,7 +10,6 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1. 直接编译真机二进制（完整包，不会空）
       - name: Build Release
         run: |
           xcodebuild build \
@@ -22,24 +21,22 @@ jobs:
             -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO
 
-      # 2. 从真实路径打包（巨魔专用结构）
-      - name: Package TrollStore IPA
+      - name: PACK IPA ✅ CORRECT
         run: |
-          # 真实路径，从 derivedData 取完整 App
-          APP_PATH=$(find build -name "VideoPlayer.app" -type d | head -1)
-          echo "✅ 完整App路径：$APP_PATH"
-          du -sh "$APP_PATH"
+          APP=$(find build -name "*.app" | head -1)
+          echo "Found: $APP"
+          du -sh "$APP"
 
-          # 打包 IPA（巨魔只认这个结构）
           mkdir -p Payload
-          cp -R "$APP_PATH" Payload/
-          zip -ry VideoPlayer-Troll.ipa Payload
+          cp -R "$APP" Payload/
+          
+          # 🔥 这里修复！！！
+          zip -ry VideoPlayer-TrollStore.ipa Payload
 
-          ls -lh VideoPlayer-Troll.ipa
+          ls -lh *.ipa
 
-      # 3. 上传最终可用包
-      - name: Upload TrollStore IPA
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: VideoPlayer-TrollStore
-          path: VideoPlayer-Troll.ipa
+          name: VideoPlayer-TrollStore-FINAL
+          path: VideoPlayer-TrollStore.ipa
