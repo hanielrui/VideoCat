@@ -24,8 +24,17 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
+      - name: List project structure
+        run: |
+          echo "=== Root directory ==="
+          ls -la
+          echo ""
+          echo "=== VideoPlayer directory ==="
+          ls -la VideoPlayer/
+
       - name: Build & Archive (No Signing)
         run: |
+          set -e
           xcodebuild archive \
             -project "${{ env.PROJECT_NAME }}.xcodeproj" \
             -scheme "${{ env.SCHEME_NAME }}" \
@@ -37,21 +46,65 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             ALLOW_TARGETING_SIMULATOR=NO \
             SKIP_INSTALL=NO
+          echo "Archive completed successfully"
+
+      - name: Debug Archive Contents
+        run: |
+          echo "=== Archive structure ==="
+          find build/${{ env.PROJECT_NAME }}.xcarchive -type f | head -20
+          echo ""
+          echo "=== Check Applications directory ==="
+          ls -la build/${{ env.PROJECT_NAME }}.xcarchive/Products/Applications/ 2>/dev/null || echo "Applications directory not found"
+          echo ""
+          echo "=== Check if app binary exists ==="
+          if [ -d "build/${{ env.PROJECT_NAME }}.xcarchive/Products/Applications/${{ env.PROJECT_NAME }}.app" ]; then
+            ls -la "build/${{ env.PROJECT_NAME }}.xcarchive/Products/Applications/${{ env.PROJECT_NAME }}.app/"
+            find "build/${{ env.PROJECT_NAME }}.xcarchive/Products/Applications/${{ env.PROJECT_NAME }}.app" -type f -name "VideoPlayer" -exec ls -lh {} \;
+          fi
 
       - name: Create IPA Manually
         run: |
+          set -e
           # 从 archive 中提取 .app
-          APP_NAME=$(find build/${{ env.PROJECT_NAME }}.xcarchive/Products/Applications -name "*.app" | head -1)
-          APP_BASENAME=$(basename "$APP_NAME")
-
+          APP_PATH="build/${{ env.PROJECT_NAME }}.xcarchive/Products/Applications/${{ env.PROJECT_NAME }}.app"
+          
+          # 检查 app 是否存在
+          if [ ! -d "$APP_PATH" ]; then
+            echo "ERROR: App not found at $APP_PATH"
+            echo "Listing archive contents:"
+            find build/${{ env.PROJECT_NAME }}.xcarchive -name "*.app"
+            exit 1
+          fi
+          
+          # 检查可执行文件是否存在
+          BINARY_PATH="$APP_PATH/${{ env.PROJECT_NAME }}"
+          if [ ! -f "$BINARY_PATH" ]; then
+            echo "ERROR: Binary not found at $BINARY_PATH"
+            echo "Contents of app directory:"
+            ls -la "$APP_PATH"
+            exit 1
+          fi
+          
+          # 检查可执行文件大小
+          BINARY_SIZE=$(stat -f%z "$BINARY_PATH" 2>/dev/null || stat -c%s "$BINARY_PATH" 2>/dev/null || echo "unknown")
+          echo "Binary size: $BINARY_SIZE bytes"
+          
+          # 显示 app 大小
+          echo "App size:"
+          du -sh "$APP_PATH"
+          
           # 创建 Payload 目录并复制 app
           mkdir -p build/Payload
-          cp -R "$APP_NAME" "build/Payload/$APP_BASENAME"
-
+          cp -R "$APP_PATH" "build/Payload/${{ env.PROJECT_NAME }}.app"
+          
           # 手动创建 IPA
           cd build
-          zip -r VideoPlayer-unsigned.ipa Payload
+          zip -r VideoPlayer-unsigned.ipa Payload/
           cd ..
+          
+          # 显示 IPA 大小
+          echo "IPA size:"
+          du -sh VideoPlayer-unsigned.ipa
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
