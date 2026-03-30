@@ -10,15 +10,12 @@ env:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
-      - name: List Xcode versions
-        run: ls -la /Applications/ | grep Xcode
-
-      - name: Select Xcode 15
-        run: sudo xcode-select -s /Applications/Xcode_15.0.app/Contents/Developer
+      - name: Select Xcode 15.4
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
 
       - name: Build with ADHOC Signing (REAL FULL IPA)
         run: |
