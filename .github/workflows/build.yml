@@ -1,33 +1,50 @@
-name: Final Build for TrollStore
+name: Build iOS ADHOC (No Account)
 on:
-  workflow_dispatch
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  PROJECT: VideoPlayer
+  SCHEME: VideoPlayer
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build App
+      - name: Select Xcode 15
+        run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+
+      - name: Build with ADHOC Signing (REAL FULL IPA)
         run: |
-          xcodebuild build \
-            -project VideoPlayer.xcodeproj \
-            -scheme VideoPlayer \
+          xcodebuild archive \
+            -project "$PROJECT.xcodeproj" \
+            -scheme "$SCHEME" \
             -configuration Release \
             -destination generic/platform=iOS \
-            CONFIGURATION_BUILD_DIR=./Products \
-            CODE_SIGN_IDENTITY="" \
+            -archivePath "$PROJECT.xcarchive" \
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
 
-      - name: Make IPA
+      - name: Package IPA
         run: |
-          ls -la ./Products
-          cp -R ./Products/VideoPlayer.app Payload/
-          zip -ry VideoPlayer.ipa Payload
+          APP="$PROJECT.xcarchive/Products/Applications/$PROJECT.app"
+          ls -lh "$APP"
+          du -sh "$APP"
+
+          chmod +x "$APP/$PROJECT"
+          rm -rf "$APP/_CodeSignature" "$APP/embedded.mobileprovision"
+
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -ryq "$PROJECT.ipa" Payload
 
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: VideoPlayer-TrollStore
+          name: VideoPlayer-FINAL
           path: "*.ipa"
