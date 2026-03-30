@@ -10,43 +10,44 @@ env:
   SCHEME_NAME: VideoPlayer
 
 jobs:
-  build-ipa:
+  build:
     runs-on: macos-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Build Release
+      # 1. 归档 + 强制输出到 ./build （你总结的核心）
+      - name: Archive
         run: |
-          xcodebuild build \
+          xcodebuild archive \
             -project "${{ env.PROJECT_NAME }}.xcodeproj" \
             -scheme "${{ env.SCHEME_NAME }}" \
             -configuration Release \
             -destination "generic/platform=iOS" \
+            -archivePath "./build/VideoPlayer.xcarchive" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
 
-      # 👇 👇 👇 全局搜索 .app —— 永远不会找不到
-      - name: Find App And Package IPA
+      # 2. 从固定路径取 app（100% 存在）
+      - name: Package IPA
         run: |
-          echo "🔍 全局搜索 .app..."
-          APP_PATH=$(find /Users/runner -name "*.app" -type d | grep -i "Release-iphoneos" | head -1)
-          
-          echo "✅ 找到APP: $APP_PATH"
-          ls -la "$APP_PATH"
-          du -sh "$APP_PATH"
+          APP_PATH="./build/VideoPlayer.xcarchive/Products/Applications/${{ env.PROJECT_NAME }}.app"
 
+          # 授权
           chmod +x "$APP_PATH/${{ env.PROJECT_NAME }}"
+          
+          # 清理签名
           rm -rf "$APP_PATH/_CodeSignature" "$APP_PATH/embedded.mobileprovision"
-
+          
+          # 打包
           mkdir -p Payload
           cp -R "$APP_PATH" Payload/
           zip -ryq VideoPlayer.ipa Payload
 
           ls -lh VideoPlayer.ipa
 
-      - name: Upload IPA
+      # 3. 上传
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: VideoPlayer-Final-IPA
