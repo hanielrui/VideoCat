@@ -3,49 +3,50 @@ name: Build iOS (No Code Signing)
 on:
   push:
     branches: [main]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 env:
   PROJECT_NAME: VideoPlayer
-  SCHEME: VideoPlayer
+  SCHEME_NAME: VideoPlayer
 
 jobs:
-  build:
+  build-ipa:
     runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Build for iOS (Real Build, Not Archive)
+      - name: Build Release (Real Build)
         run: |
           xcodebuild build \
-            -project "$PROJECT_NAME.xcodeproj" \
-            -scheme "$SCHEME" \
+            -project "${{ env.PROJECT_NAME }}.xcodeproj" \
+            -scheme "${{ env.SCHEME_NAME }}" \
             -configuration Release \
-            -destination 'generic/platform=iOS' \
-            -derivedDataPath derivedData \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath "build" \
             CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED="NO" \
-            CODE_SIGNING_ALLOWED="NO"
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
 
-      # 👇 这里 100% 能拿到真实的、完整大小的 .app
-      - name: Package IPA
+      - name: Find & Pack IPA
         run: |
-          APP_PATH=$(find derivedData -name "*.app" -type d | head -1)
-          echo "✅ Found: $APP_PATH"
+          # 自动搜索真实的 .app（100% 存在）
+          APP_PATH=$(find build -name "*.app" -type d | head -1)
+          echo "✅ 找到真实App：$APP_PATH"
 
-          # 赋予执行权限
-          chmod +x "$APP_PATH/$PROJECT_NAME"
+          # 授权
+          chmod +x "$APP_PATH/${{ env.PROJECT_NAME }}"
 
           # 清理签名
-          rm -rf "$APP_PATH/_CodeSignature" "$APP_PATH/embedded.mobileprovision"
+          rm -rf "$APP_PATH/_CodeSignature"
+          rm -f "$APP_PATH/embedded.mobileprovision"
 
-          # 打包正确的 IPA 结构
+          # 打包正确IPA结构
           mkdir -p Payload
           cp -R "$APP_PATH" Payload/
           zip -ryq VideoPlayer.ipa Payload
 
+          # 显示大小
           ls -lh VideoPlayer.ipa
 
       - name: Upload IPA
