@@ -57,23 +57,42 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             ALLOW_TARGETING_SIMULATOR=NO \
-            SKIP_INSTALL=NO
-          echo "Archive completed successfully"
+            SKIP_INSTALL=NO 2>&1 | tee build.log || true
+          echo "Archive completed (with or without errors)"
         continue-on-error: true
 
-      - name: Check build log for compilation errors
+      - name: Check build status
         run: |
-          echo "=== Searching for Swift compilation in build log ==="
-          grep -E "swiftc.*\.swift|CompileSwift|Compiling|Compiling .*.swift|error:|warning:" build.log | head -50 || echo "No compilation lines found"
-          echo ""
-          echo "=== Counting compiled Swift files ==="
-          grep -c "swiftc.*\.swift" build.log || echo "0"
-          echo ""
-          echo "=== Searching for 'VideoPlayer.swift' in log ==="
-          grep "VideoPlayer.swift" build.log || echo "Not found"
-          echo ""
-          echo "=== Last 100 lines of build log ==="
-          tail -100 build.log
+          if [ -f build.log ]; then
+            echo "=== Checking for errors in build log ==="
+            grep -i "error:" build.log | tail -20 || echo "No errors found"
+            echo ""
+            echo "=== Checking for warnings ==="
+            grep -i "warning:" build.log | tail -10 || echo "No warnings found"
+            echo ""
+            echo "=== Build result ==="
+            if grep -q "ARCHIVE SUCCEEDED" build.log; then
+              echo "✅ Archive succeeded"
+            elif grep -q "ARCHIVE FAILED" build.log; then
+              echo "❌ Archive failed"
+            else
+              echo "⚠️ Archive status unknown"
+            fi
+          else
+            echo "ERROR: build.log not found - build step may have failed to run"
+          fi
+
+      - name: Check build log for compilation
+        run: |
+          if [ -f build.log ]; then
+            echo "=== Searching for Swift compilation in build log ==="
+            grep -E "swiftc.*\.swift|CompileSwift|Compiling|Compiling .*.swift" build.log | head -20 || echo "No compilation lines found"
+            echo ""
+            echo "=== Last 50 lines of build log ==="
+            tail -50 build.log
+          else
+            echo "build.log not found"
+          fi
 
       - name: Debug Archive Contents
         run: |
@@ -128,12 +147,29 @@ jobs:
           mkdir -p build/Payload
           cp -R "$APP_PATH" "build/Payload/${{ env.PROJECT_NAME }}.app"
 
-          # 手动创建 IPA（不使用 cd，直接指定路径）
-          zip -r build/VideoPlayer-unsigned.ipa build/Payload/
+          # ===== 关键步骤 1: 赋予可执行文件权限 =====
+          echo "=== Setting executable permissions ==="
+          chmod +x "build/Payload/${{ env.PROJECT_NAME }}.app/${{ env.PROJECT_NAME }}"
+          ls -l "build/Payload/${{ env.PROJECT_NAME }}.app/${{ env.PROJECT_NAME }}"
 
-          # 显示 IPA 大小
+          # ===== 关键步骤 2: 删除旧签名文件 =====
+          echo "=== Removing old signature files ==="
+          rm -rf "build/Payload/${{ env.PROJECT_NAME }}.app/_CodeSignature"
+          rm -f "build/Payload/${{ env.PROJECT_NAME }}.app/embedded.mobileprovision"
+          echo "Signature files removed"
+
+          # ===== 关键步骤 3: 正确的 zip 打包 =====
+          echo "=== Creating IPA ==="
+          cd build/Payload
+          zip -r ../VideoPlayer-unsigned.ipa "${{ env.PROJECT_NAME }}.app"
+          cd ../..
+
+          # 显示 IPA 大小和结构
           echo "IPA size:"
           du -sh build/VideoPlayer-unsigned.ipa
+          echo ""
+          echo "=== IPA structure ==="
+          unzip -l build/VideoPlayer-unsigned.ipa
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
