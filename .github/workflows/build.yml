@@ -66,6 +66,9 @@ jobs:
 
       - name: Create IPA
         run: |
+          # Create build directory
+          mkdir -p ./build
+
           # Archive without signing for generic iOS device
           xcodebuild archive \
             -project ${{ env.PROJECT_NAME }}.xcodeproj \
@@ -85,7 +88,7 @@ jobs:
           
           # Create IPA using zip
           cd ./build
-          zip -r "$IPA_PATH" Payload
+          zip -qr "$IPA_PATH" Payload
           cd ..
 
       - name: Upload IPA
