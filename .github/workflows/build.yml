@@ -36,12 +36,19 @@ jobs:
           ls -lh "$APP"
           du -sh "$APP"
 
+          # 手动复制 Swift 标准库（关键！）
+          /Applications/Xcode_15.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-stdlib-tool --copy --verbose --scan-executable "$APP/$PROJECT" --scan-folder "$APP/Frameworks" --platform iphoneos --destination "$APP/Frameworks"
+
           chmod +x "$APP/$PROJECT"
           rm -rf "$APP/_CodeSignature" "$APP/embedded.mobileprovision"
 
           mkdir -p Payload
           cp -R "$APP" Payload/
           zip -ryq "$PROJECT.ipa" Payload
+
+          # 显示最终 IPA 大小
+          ls -lh "$PROJECT.ipa"
+          unzip -l "$PROJECT.ipa" | head -30
 
       - name: Upload
         uses: actions/upload-artifact@v4
