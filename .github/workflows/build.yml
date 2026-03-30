@@ -66,17 +66,23 @@ jobs:
 
       - name: Create IPA
         run: |
+          # Archive with temporary signing (allows export without team)
           xcodebuild archive \
             -project ${{ env.PROJECT_NAME }}.xcodeproj \
             -scheme ${{ env.SCHEME_NAME }} \
             -configuration Release \
             -archivePath ./build/VideoPlayer.xcarchive \
-            CODE_SIGNING_ALLOWED=${{ env.CODE_SIGNING_ALLOWED }}
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGN_IDENTITY="Apple Development" \
+            PROVISIONING_PROFILE_SPECIFIER="" \
+            -allowProvisioningUpdates
 
+          # Export with skip signature validation
           xcodebuild -exportArchive \
             -archivePath ./build/VideoPlayer.xcarchive \
             -exportPath ./build/VideoPlayer.ipa \
-            -exportOptionsPlist ./VideoPlayer/ExportOptions.plist
+            -exportOptionsPlist ./VideoPlayer/ExportOptions.plist \
+            -skipPackageSignatureValidation
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
