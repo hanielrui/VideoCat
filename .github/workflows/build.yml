@@ -39,7 +39,17 @@ jobs:
           xcodebuild -project "${{ env.PROJECT_NAME }}.xcodeproj" \
             -scheme "${{ env.SCHEME_NAME }}" \
             -configuration Release \
-            -showBuildSettings | grep -E "(SWIFT_VERSION|PRODUCT_NAME|TARGETED_DEVICE_FAMILY|INFOPLIST_FILE|ENABLE_PREVIEWS)"
+            -showBuildSettings | grep -E "(SWIFT_VERSION|PRODUCT_NAME|TARGETED_DEVICE_FAMILY|INFOPLIST_FILE|ENABLE_PREVIEWS|ONLY_ACTIVE_ARCH|ARCHS)"
+
+      - name: Show scheme info
+        run: |
+          echo "=== Listing schemes ==="
+          xcodebuild -project "${{ env.PROJECT_NAME }}.xcodeproj" -list
+          echo ""
+          echo "=== Show scheme contents ==="
+          xcodebuild -project "${{ env.PROJECT_NAME }}.xcodeproj" \
+            -scheme "${{ env.SCHEME_NAME }}" \
+            -showBuildSettings 2>&1 | head -50
 
       - name: Build & Archive (No Signing)
         run: |
@@ -61,10 +71,16 @@ jobs:
       - name: Check build log for compilation errors
         run: |
           echo "=== Searching for Swift compilation in build log ==="
-          grep -E "swiftc.*\.swift|CompileSwift|error:|warning:" build.log | tail -20 || echo "No compilation lines found"
+          grep -E "swiftc.*\.swift|CompileSwift|Compiling|Compiling .*.swift|error:|warning:" build.log | head -50 || echo "No compilation lines found"
           echo ""
-          echo "=== Last 50 lines of build log ==="
-          tail -50 build.log
+          echo "=== Counting compiled Swift files ==="
+          grep -c "swiftc.*\.swift" build.log || echo "0"
+          echo ""
+          echo "=== Searching for 'VideoPlayer.swift' in log ==="
+          grep "VideoPlayer.swift" build.log || echo "Not found"
+          echo ""
+          echo "=== Last 100 lines of build log ==="
+          tail -100 build.log
 
       - name: Debug Archive Contents
         run: |
