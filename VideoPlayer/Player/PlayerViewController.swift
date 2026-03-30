@@ -287,13 +287,13 @@ class PlayerViewController: UIViewController {
     private func loadMedia() {
         guard urlValidator.validate(url) else {
             showError("Invalid playback URL. Please check the video source.")
-            Logger.Player.error(NetworkError.invalidURL)
+            Logger.Player.playbackError(NetworkError.invalidURL)
             return
         }
 
         guard let mediaURL = URL(string: url) else {
             showError("Failed to parse URL.")
-            Logger.Player.error(NetworkError.invalidURL)
+            Logger.Player.playbackError(NetworkError.invalidURL)
             return
         }
 
