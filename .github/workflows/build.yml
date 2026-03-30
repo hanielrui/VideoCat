@@ -38,7 +38,7 @@ jobs:
             -project ${{ env.PROJECT_NAME }}.xcodeproj \
             -scheme ${{ env.SCHEME_NAME }} \
             -configuration Debug \
-            -destination 'platform=iOS Simulator,name=iPhone 15 Pro' \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
             CODE_SIGNING_ALLOWED=${{ env.CODE_SIGNING_ALLOWED }} \
             CODE_SIGNING_REQUIRED=${{ env.CODE_SIGNING_REQUIRED }} \
             CODE_SIGN_IDENTITY="${{ env.CODE_SIGN_IDENTITY }}"
