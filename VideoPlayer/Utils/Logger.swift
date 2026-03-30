@@ -82,14 +82,14 @@ struct Logger {
 
         static func response(_ statusCode: Int, path: String) {
             if statusCode >= 400 {
-                error("Response [\(statusCode)] \(path)")
+                Logger.error("Response [\(statusCode)] \(path)")
             } else {
                 debug("Response [\(statusCode)] \(path)")
             }
         }
 
-        static func error(_ error: Error) {
-            self.error("Network error: \(error.localizedDescription)")
+        static func networkError(_ error: Error) {
+            Logger.error("Network error: \(error.localizedDescription)")
         }
     }
 
@@ -124,8 +124,8 @@ struct Logger {
             info("Playback stopped")
         }
 
-        static func error(_ error: Error) {
-            self.error("Playback error: \(error.localizedDescription)")
+        static func playbackError(_ error: Error) {
+            Logger.error("Playback error: \(error.localizedDescription)")
         }
     }
 }
