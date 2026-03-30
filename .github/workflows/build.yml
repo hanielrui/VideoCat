@@ -1,60 +1,47 @@
-name: Build iOS (No Code Signing - FULL SIZE)
-
+name: Build iOS ADHOC (No Account)
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
 env:
-  PROJECT_NAME: VideoPlayer
+  PROJECT: VideoPlayer
   SCHEME: VideoPlayer
-  IOS_VERSION: 15.0
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
 
-      # 1. 直接 BUILD 真机（不会空，100% 完整二进制）
-      - name: Build Real App
+      - name: Build with ADHOC Signing (REAL FULL IPA)
         run: |
-          xcodebuild build \
-            -project "$PROJECT_NAME.xcodeproj" \
+          xcodebuild archive \
+            -project "$PROJECT.xcodeproj" \
             -scheme "$SCHEME" \
             -configuration Release \
-            -sdk iphoneos \
-            -arch arm64 \
-            IPHONEOS_DEPLOYMENT_TARGET=$IOS_VERSION \
-            BUILD_DIR="./build" \
-            CODE_SIGN_IDENTITY="" \
+            -destination generic/platform=iOS \
+            -archivePath "$PROJECT.xcarchive" \
+            CODE_SIGNING_ALLOWED=YES \
+            CODE_SIGN_IDENTITY="-" \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            AD_HOC_CODE_SIGNING_ALLOWED=YES
 
-      # 2. 固定真实路径（从 build 目录取，绝对完整）
-      - name: Package Final IPA
+      - name: Package IPA
         run: |
-          APP_DIR="./build/Release-iphoneos/$PROJECT_NAME.app"
-          echo "✅ 使用真实二进制路径: $APP_DIR"
-          
-          ls -la "$APP_DIR"
-          du -sh "$APP_DIR"
-          
-          # 权限
-          chmod +x "$APP_DIR/$PROJECT_NAME"
-          
-          # 清理签名
-          rm -rf "$APP_DIR/_CodeSignature" "$APP_DIR/embedded.mobileprovision"
-          
-          # 打包
-          mkdir -p Payload
-          cp -R "$APP_DIR" Payload/
-          zip -ryq VideoPlayer.ipa Payload
-          
-          ls -lh VideoPlayer.ipa
+          APP="$PROJECT.xcarchive/Products/Applications/$PROJECT.app"
+          ls -lh "$APP"
+          du -sh "$APP"
 
-      - name: Upload IPA
+          chmod +x "$APP/$PROJECT"
+          rm -rf "$APP/_CodeSignature" "$APP/embedded.mobileprovision"
+
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -ryq "$PROJECT.ipa" Payload
+
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
           name: VideoPlayer-FINAL
-          path: VideoPlayer.ipa
+          path: "*.ipa"
