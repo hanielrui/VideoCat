@@ -23,29 +23,8 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
-      - name: List project structure
-        run: |
-          echo "=== Root directory ==="
-          ls -la
-          echo ""
-          echo "=== VideoPlayer directory ==="
-          ls -la VideoPlayer/
-          echo ""
-          echo "=== Check if Swift files exist ==="
-          find VideoPlayer -name "*.swift" | head -10
-
-      - name: Show Build Settings
-        run: |
-          echo "=== Listing schemes ==="
-          xcodebuild -project "${{ env.PROJECT_NAME }}.xcodeproj" -list
-          echo ""
-          echo "=== Key Build Settings ==="
-          xcodebuild -project "${{ env.PROJECT_NAME }}.xcodeproj" \
-            -scheme "${{ env.SCHEME_NAME }}" \
-            -configuration Release \
-            -showBuildSettings | grep -E "(SWIFT_VERSION|PRODUCT_NAME|TARGETED_DEVICE_FAMILY|INFOPLIST_FILE|ENABLE_PREVIEWS|ONLY_ACTIVE_ARCH|ARCHS|ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES)"
-
-      - name: Build & Archive (No Signing)
+      # 1. 构建 Archive（已经100%成功）
+      - name: Build & Archive
         run: |
           xcodebuild archive \
             -project "${{ env.PROJECT_NAME }}.xcodeproj" \
@@ -56,124 +35,36 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            ALLOW_TARGETING_SIMULATOR=NO \
-            SKIP_INSTALL=NO 2>&1 | tee build.log || true
-          echo "Archive completed (with or without errors)"
-        continue-on-error: true
+            SKIP_INSTALL=NO
 
-      - name: Check build status
+      # 2. 生成无证书IPA（核心！）
+      - name: Create Unsigned IPA
         run: |
-          if [ -f build.log ]; then
-            echo "=== Checking for errors in build log ==="
-            grep -i "error:" build.log | tail -20 || echo "No errors found"
-            echo ""
-            echo "=== Checking for warnings ==="
-            grep -i "warning:" build.log | tail -10 || echo "No warnings found"
-            echo ""
-            echo "=== Build result ==="
-            if grep -q "ARCHIVE SUCCEEDED" build.log; then
-              echo "✅ Archive succeeded"
-            elif grep -q "ARCHIVE FAILED" build.log; then
-              echo "❌ Archive failed"
-            else
-              echo "⚠️ Archive status unknown"
-            fi
-          else
-            echo "ERROR: build.log not found - build step may have failed to run"
-          fi
+          # 路径
+          APP="build/VideoPlayer.xcarchive/Products/Applications/VideoPlayer.app"
+          IPA="build/VideoPlayer.ipa"
 
-      - name: Check build log for compilation
-        run: |
-          if [ -f build.log ]; then
-            echo "=== Searching for Swift compilation in build log ==="
-            grep -E "swiftc.*\.swift|CompileSwift|Compiling|Compiling .*.swift" build.log | head -20 || echo "No compilation lines found"
-            echo ""
-            echo "=== Last 50 lines of build log ==="
-            tail -50 build.log
-          else
-            echo "build.log not found"
-          fi
+          # 授权可执行（必须）
+          chmod +x "$APP/VideoPlayer"
 
-      - name: Debug Archive Contents
-        run: |
-          echo "=== Archive structure ==="
-          find build/${{ env.PROJECT_NAME }}.xcarchive -type f | head -20
-          echo ""
-          echo "=== Check Applications directory ==="
-          ls -la build/${{ env.PROJECT_NAME }}.xcarchive/Products/Applications/ 2>/dev/null || echo "Applications directory not found"
-          echo ""
-          echo "=== Check if app binary exists ==="
-          if [ -d "build/${{ env.PROJECT_NAME }}.xcarchive/Products/Applications/${{ env.PROJECT_NAME }}.app" ]; then
-            ls -la "build/${{ env.PROJECT_NAME }}.xcarchive/Products/Applications/${{ env.PROJECT_NAME }}.app/"
-            find "build/${{ env.PROJECT_NAME }}.xcarchive/Products/Applications/${{ env.PROJECT_NAME }}.app" -type f -name "VideoPlayer" -exec ls -lh {} \;
-          fi
+          # 删除签名（必须）
+          rm -rf "$APP/_CodeSignature"
+          rm -f "$APP/embedded.mobileprovision"
 
-      - name: Create IPA Manually
-        run: |
-          # 从 archive 中提取 .app
-          APP_PATH="build/${{ env.PROJECT_NAME }}.xcarchive/Products/Applications/${{ env.PROJECT_NAME }}.app"
+          # 标准IPA结构打包
+          cd build
+          mkdir -p Payload
+          cp -R "$APP" Payload/
+          zip -ryq VideoPlayer.ipa Payload
+          cd ..
 
-          # 检查 app 是否存在
-          if [ ! -d "$APP_PATH" ]; then
-            echo "ERROR: App not found at $APP_PATH"
-            echo "Listing archive contents:"
-            find build/${{ env.PROJECT_NAME }}.xcarchive -name "*.app" || true
-            exit 1
-          fi
+          echo "✅ IPA 生成完成！"
+          ls -lh build/VideoPlayer.ipa
 
-          # 检查可执行文件是否存在
-          BINARY_PATH="$APP_PATH/${{ env.PROJECT_NAME }}"
-          if [ ! -f "$BINARY_PATH" ]; then
-            echo "ERROR: Binary not found at $BINARY_PATH"
-            echo "Contents of app directory:"
-            ls -la "$APP_PATH"
-            exit 1
-          fi
-
-          # 检查可执行文件大小
-          BINARY_SIZE=$(stat -f%z "$BINARY_PATH" 2>/dev/null || stat -c%s "$BINARY_PATH" 2>/dev/null || echo "unknown")
-          echo "Binary size: $BINARY_SIZE bytes"
-
-          # 警告：如果二进制文件小于 1MB，可能有问题
-          if [ "$BINARY_SIZE" -lt 1000000 ]; then
-            echo "WARNING: Binary size is less than 1MB, which may indicate compilation issues"
-          fi
-
-          # 显示 app 大小
-          echo "App size:"
-          du -sh "$APP_PATH"
-
-          # 创建 Payload 目录并复制 app
-          mkdir -p build/Payload
-          cp -R "$APP_PATH" "build/Payload/${{ env.PROJECT_NAME }}.app"
-
-          # ===== 关键步骤 1: 赋予可执行文件权限 =====
-          echo "=== Setting executable permissions ==="
-          chmod +x "build/Payload/${{ env.PROJECT_NAME }}.app/${{ env.PROJECT_NAME }}"
-          ls -l "build/Payload/${{ env.PROJECT_NAME }}.app/${{ env.PROJECT_NAME }}"
-
-          # ===== 关键步骤 2: 删除旧签名文件 =====
-          echo "=== Removing old signature files ==="
-          rm -rf "build/Payload/${{ env.PROJECT_NAME }}.app/_CodeSignature"
-          rm -f "build/Payload/${{ env.PROJECT_NAME }}.app/embedded.mobileprovision"
-          echo "Signature files removed"
-
-          # ===== 关键步骤 3: 正确的 zip 打包 =====
-          echo "=== Creating IPA ==="
-          cd build/Payload
-          zip -r ../VideoPlayer-unsigned.ipa "${{ env.PROJECT_NAME }}.app"
-          cd ../..
-
-          # 显示 IPA 大小和结构
-          echo "IPA size:"
-          du -sh build/VideoPlayer-unsigned.ipa
-          echo ""
-          echo "=== IPA structure ==="
-          unzip -l build/VideoPlayer-unsigned.ipa
-
+      # 3. 上传IPA
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: VideoPlayer-Unsigned-IPA
-          path: build/VideoPlayer-unsigned.ipa
+          path: build/VideoPlayer.ipa
           retention-days: 15
