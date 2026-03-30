@@ -33,7 +33,7 @@ jobs:
         run: swift -version
 
       - name: Cache CocoaPods
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             Pods
@@ -61,7 +61,7 @@ jobs:
             CODE_SIGN_IDENTITY="${{ env.CODE_SIGN_IDENTITY }}"
 
       - name: Upload Build Artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: build-output
           path: |
@@ -82,7 +82,7 @@ jobs:
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
       - name: Cache CocoaPods
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
           path: |
             Pods
@@ -111,13 +111,13 @@ jobs:
             CODE_SIGNING_ALLOWED=${{ env.CODE_SIGNING_ALLOWED }}
 
       - name: Upload IPA
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: VideoPlayer-ipa
           path: VideoPlayer/build/VideoPlayer.ipa
 
       - name: Upload xcarchive
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: VideoPlayer-xcarchive
           path: VideoPlayer/build/VideoPlayer.xcarchive
