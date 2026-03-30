@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>method</key>
-	<string>release-testing</string>
+	<string>ad-hoc</string>
 	<key>uploadSymbols</key>
 	<false/>
 </dict>
