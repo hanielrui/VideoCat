@@ -36,20 +36,14 @@ jobs:
 
       - name: Show Build Settings
         run: |
-          xcodebuild -project "${{ env.PROJECT_NAME }}.xcodeproj" \
-            -scheme "${{ env.SCHEME_NAME }}" \
-            -configuration Release \
-            -showBuildSettings | grep -E "(SWIFT_VERSION|PRODUCT_NAME|TARGETED_DEVICE_FAMILY|INFOPLIST_FILE|ENABLE_PREVIEWS|ONLY_ACTIVE_ARCH|ARCHS)"
-
-      - name: Show scheme info
-        run: |
           echo "=== Listing schemes ==="
           xcodebuild -project "${{ env.PROJECT_NAME }}.xcodeproj" -list
           echo ""
-          echo "=== Show scheme contents ==="
+          echo "=== Key Build Settings ==="
           xcodebuild -project "${{ env.PROJECT_NAME }}.xcodeproj" \
             -scheme "${{ env.SCHEME_NAME }}" \
-            -showBuildSettings 2>&1 | head -50
+            -configuration Release \
+            -showBuildSettings | grep -E "(SWIFT_VERSION|PRODUCT_NAME|TARGETED_DEVICE_FAMILY|INFOPLIST_FILE|ENABLE_PREVIEWS|ONLY_ACTIVE_ARCH|ARCHS|ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES)"
 
       - name: Build & Archive (No Signing)
         run: |
