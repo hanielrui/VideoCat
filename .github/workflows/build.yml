@@ -31,6 +31,16 @@ jobs:
           echo ""
           echo "=== VideoPlayer directory ==="
           ls -la VideoPlayer/
+          echo ""
+          echo "=== Check if Swift files exist ==="
+          find VideoPlayer -name "*.swift" | head -10
+
+      - name: Show Build Settings
+        run: |
+          xcodebuild -project "${{ env.PROJECT_NAME }}.xcodeproj" \
+            -scheme "${{ env.SCHEME_NAME }}" \
+            -configuration Release \
+            -showBuildSettings | grep -E "(SWIFT_VERSION|PRODUCT_NAME|TARGETED_DEVICE_FAMILY|INFOPLIST_FILE|ENABLE_PREVIEWS)"
 
       - name: Build & Archive (No Signing)
         run: |
@@ -45,8 +55,17 @@ jobs:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             ALLOW_TARGETING_SIMULATOR=NO \
-            SKIP_INSTALL=NO
+            SKIP_INSTALL=NO \
+            -verbose 2>&1 | tee build.log
           echo "Archive completed successfully"
+
+      - name: Check build log for compilation errors
+        run: |
+          echo "=== Searching for Swift compilation in build log ==="
+          grep -E "swiftc.*\.swift|CompileSwift|error:|warning:" build.log | tail -20 || echo "No compilation lines found"
+          echo ""
+          echo "=== Last 50 lines of build log ==="
+          tail -50 build.log
 
       - name: Debug Archive Contents
         run: |
