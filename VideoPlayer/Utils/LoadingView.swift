@@ -106,8 +106,8 @@ extension BaseViewController {
         }
     }
 
-    // 覆盖基类方法
-    override func setLoading(_ loading: Bool) {
+    // 设置加载状态（供 BaseViewController 调用）
+    func setLoading(_ loading: Bool) {
         if loading {
             showLoading()
         } else {
@@ -115,3 +115,4 @@ extension BaseViewController {
         }
     }
 }
+
