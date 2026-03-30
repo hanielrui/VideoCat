@@ -1,4 +1,4 @@
-name: FINAL WORKING — iOS TrollStore
+name: Final iOS TrollStore
 on:
   workflow_dispatch
   push:
@@ -10,36 +10,30 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Select Xcode 15.4
+      - name: Xcode 15.4
         run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
 
-      # 编译：强制输出真机完整产物
-      - name: Build iOS Binary
+      - name: Build
         run: xcodebuild build \
-          -project VideoPlayer.xcodeproj \
+          -project VideoPlayer.xcodoproj \
           -scheme VideoPlayer \
           -configuration Release \
           -sdk iphoneos \
           -arch arm64 \
-          BUILD_DIR="./build" \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO \
+          BUILD_DIR=./build \
           CODE_SIGNING_ALLOWED=NO
 
-      # 关键：从真实路径打包，修复空包问题
-      - name: Build Final IPA
+      - name: Pack IPA
         run: |
-          APP="./build/Release-iphoneos/VideoPlayer.app"
-          ls -la "$APP"
+          APP=$(find ./build -name "VideoPlayer.app" -type d | head -1)
+          echo "Found: $APP"
           du -sh "$APP"
-
           mkdir -p Payload
           cp -R "$APP" Payload/
-          zip -ry VideoPlayer-Troll.ipa Payload
-          ls -lh *.ipa
+          zip -ry VideoPlayer.ipa Payload
 
-      - name: Upload IPA
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: VideoPlayer-TrollStore
+          name: VideoPlayer-Troll
           path: "*.ipa"
