@@ -1,17 +1,19 @@
-name: TrollStore 正式可用版
+name: FINAL WORKING VERSION FOR TROLLSTORE
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
   build:
-    runs-on: macos-latest
+    runs-on: macos-14
     steps:
       - uses: actions/checkout@v4
 
-      # 🔥 只编译，不签名，不归档
-      - name: Build Release
+      # 🔥 用 Xcode 15 而不是 16！！！iOS 18 封锁了无证书打包
+      - name: Switch to Xcode 15
+        run: sudo xcode-select -s /Applications/Xcode_15.0.app
+
+      # 🔥 正常编译，无证书，完整产物
+      - name: Build App
         run: |
           xcodebuild build \
             -project VideoPlayer.xcodeproj \
@@ -19,14 +21,14 @@ jobs:
             -configuration Release \
             -sdk iphoneos \
             -arch arm64 \
-            CONFIGURATION_BUILD_DIR=./output \
+            -derivedDataPath build \
             CODE_SIGNING_ALLOWED=NO
 
-      # 🔥 直接从 ./output 取 .app，100% 存在
-      - name: 打包 IPA
+      # 🔥 固定路径，100% 完整大小
+      - name: Make IPA
         run: |
-          APP="./output/VideoPlayer.app"
-          ls -la "$APP"
+          APP="build/Build/Products/Release-iphoneos/VideoPlayer.app"
+          echo "USING: $APP"
           du -sh "$APP"
 
           mkdir -p Payload
@@ -35,9 +37,8 @@ jobs:
 
           ls -lh *.ipa
 
-      # 上传
       - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: VideoPlayer-TrollStore
-          path: VideoPlayer-Troll.ipa
+          name: VideoPlayer-FINAL
+          path: "*.ipa"
