@@ -212,7 +212,7 @@ class JellyfinHomeViewController: BaseViewController {
     }
 
     // MARK: - UITableViewDelegate
-    override func tableView(
+    func tableView(
         _ tableView: UITableView,
         didSelectRowAt indexPath: IndexPath
     ) {
