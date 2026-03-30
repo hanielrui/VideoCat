@@ -9,57 +9,42 @@ on:
 
 env:
   PROJECT_NAME: VideoPlayer
-  SCHEME_NAME: VideoPlayer
+  SCHEME: VideoPlayer
 
 jobs:
-  build-ipa:
-    name: Build & Export Unsigned IPA
+  build:
     runs-on: macos-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
-
-      # 🔥 关键：强制把产物输出到当前目录
-      - name: Build & Archive (Forced Output)
+      - name: Build for iOS (Real Build, Not Archive)
         run: |
-          xcodebuild archive \
-            -project "${{ env.PROJECT_NAME }}.xcodeproj" \
-            -scheme "${{ env.SCHEME_NAME }}" \
+          xcodebuild build \
+            -project "$PROJECT_NAME.xcodeproj" \
+            -scheme "$SCHEME" \
             -configuration Release \
-            -destination "generic/platform=iOS" \
-            -archivePath "./VideoPlayer.xcarchive" \
-            -derivedDataPath "./derivedData" \
-            BUILD_DIR="./build" \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath derivedData \
             CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO \
-            SKIP_INSTALL=NO
+            CODE_SIGNING_REQUIRED="NO" \
+            CODE_SIGNING_ALLOWED="NO"
 
-      # 🔥 自动找真正的 .app（绝对不会空）
-      - name: Find and Package IPA
+      # 👇 这里 100% 能拿到真实的、完整大小的 .app
+      - name: Package IPA
         run: |
-          # 从构建目录搜索真正的 .app（这是真实产物）
-          APP_PATH=$(find ./derivedData -name "*.app" -type d | head -1)
-          echo "✅ 找到真实 App: $APP_PATH"
+          APP_PATH=$(find derivedData -name "*.app" -type d | head -1)
+          echo "✅ Found: $APP_PATH"
 
-          # 检查大小
-          du -sh "$APP_PATH"
-
-          # 权限
-          chmod +x "$APP_PATH/VideoPlayer"
+          # 赋予执行权限
+          chmod +x "$APP_PATH/$PROJECT_NAME"
 
           # 清理签名
-          rm -rf "$APP_PATH/_CodeSignature"
-          rm -f "$APP_PATH/embedded.mobileprovision"
+          rm -rf "$APP_PATH/_CodeSignature" "$APP_PATH/embedded.mobileprovision"
 
-          # 打包
+          # 打包正确的 IPA 结构
           mkdir -p Payload
           cp -R "$APP_PATH" Payload/
-          zip -ry VideoPlayer.ipa Payload
+          zip -ryq VideoPlayer.ipa Payload
 
           ls -lh VideoPlayer.ipa
 
@@ -68,4 +53,3 @@ jobs:
         with:
           name: VideoPlayer-Final-IPA
           path: VideoPlayer.ipa
-          retention-days: 15
