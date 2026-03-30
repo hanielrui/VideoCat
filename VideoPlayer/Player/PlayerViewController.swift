@@ -352,12 +352,6 @@ class PlayerViewController: UIViewController {
     }
 }
 
-// MARK: - PlayerCore 遵循协议
-extension PlayerCore: PlayerCoreProtocol {}
-
-// MARK: - GestureManager 遵循协议
-extension GestureManager: GestureManagerProtocol {}
-
 // MARK: - UIGestureRecognizerDelegate
 extension PlayerViewController: UIGestureRecognizerDelegate {
     func gestureRecognizer(
