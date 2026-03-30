@@ -89,6 +89,11 @@ jobs:
           BINARY_SIZE=$(stat -f%z "$BINARY_PATH" 2>/dev/null || stat -c%s "$BINARY_PATH" 2>/dev/null || echo "unknown")
           echo "Binary size: $BINARY_SIZE bytes"
           
+          # 警告：如果二进制文件小于 1MB，可能有问题
+          if [ "$BINARY_SIZE" -lt 1000000 ]; then
+            echo "WARNING: Binary size is less than 1MB, which may indicate compilation issues"
+          fi
+          
           # 显示 app 大小
           echo "App size:"
           du -sh "$APP_PATH"
@@ -97,14 +102,12 @@ jobs:
           mkdir -p build/Payload
           cp -R "$APP_PATH" "build/Payload/${{ env.PROJECT_NAME }}.app"
           
-          # 手动创建 IPA
-          cd build
-          zip -r VideoPlayer-unsigned.ipa Payload/
-          cd ..
+          # 手动创建 IPA（不使用 cd，直接指定路径）
+          zip -r build/VideoPlayer-unsigned.ipa build/Payload/
           
           # 显示 IPA 大小
           echo "IPA size:"
-          du -sh VideoPlayer-unsigned.ipa
+          du -sh build/VideoPlayer-unsigned.ipa
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
