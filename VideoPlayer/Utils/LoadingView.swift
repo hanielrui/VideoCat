@@ -106,8 +106,8 @@ extension BaseViewController {
         }
     }
 
-    // 设置加载状态（供 BaseViewController 调用）
-    func setLoading(_ loading: Bool) {
+    // 更新加载状态
+    func updateLoadingState(_ loading: Bool) {
         if loading {
             showLoading()
         } else {
@@ -115,4 +115,3 @@ extension BaseViewController {
         }
     }
 }
-
