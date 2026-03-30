@@ -38,34 +38,24 @@ jobs:
             ALLOW_TARGETING_SIMULATOR=NO \
             SKIP_INSTALL=NO
 
-      - name: Export Unsigned IPA
+      - name: Create IPA Manually
         run: |
-          # 创建导出选项（无签名）
-          cat > exportOptions.plist << EOF
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>debugging</string>
-              <key>signingStyle</key>
-              <string>manual</string>
-          </dict>
-          </plist>
-          EOF
+          # 从 archive 中提取 .app
+          APP_NAME=$(find build/${{ env.PROJECT_NAME }}.xcarchive/Products/Applications -name "*.app" | head -1)
+          APP_BASENAME=$(basename "$APP_NAME")
 
-          # 导出 IPA（完全无证书）
-          xcodebuild -exportArchive \
-            -archivePath "build/${{ env.PROJECT_NAME }}.xcarchive" \
-            -exportPath "build/IPA" \
-            -exportOptionsPlist exportOptions.plist \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+          # 创建 Payload 目录并复制 app
+          mkdir -p build/Payload
+          cp -R "$APP_NAME" "build/Payload/$APP_BASENAME"
+
+          # 手动创建 IPA
+          cd build
+          zip -r VideoPlayer-unsigned.ipa Payload
+          cd ..
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: VideoPlayer-Unsigned-IPA
-          path: build/IPA/*.ipa
+          path: build/VideoPlayer-unsigned.ipa
           retention-days: 15
