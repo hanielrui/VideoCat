@@ -1,4 +1,5 @@
 import AVFoundation
+import UIKit
 
 // MARK: - 播放错误
 enum PlayerError: LocalizedError {
