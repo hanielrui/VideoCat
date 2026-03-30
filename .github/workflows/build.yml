@@ -1,4 +1,4 @@
-name: Build iOS (No Code Signing)
+name: Build iOS (No Code Signing - FULL SIZE)
 
 on:
   push:
@@ -7,7 +7,8 @@ on:
 
 env:
   PROJECT_NAME: VideoPlayer
-  SCHEME_NAME: VideoPlayer
+  SCHEME: VideoPlayer
+  IOS_VERSION: 15.0
 
 jobs:
   build:
@@ -15,40 +16,45 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      # 1. 归档 + 强制输出到 ./build （你总结的核心）
-      - name: Archive
+      # 1. 直接 BUILD 真机（不会空，100% 完整二进制）
+      - name: Build Real App
         run: |
-          xcodebuild archive \
-            -project "${{ env.PROJECT_NAME }}.xcodeproj" \
-            -scheme "${{ env.SCHEME_NAME }}" \
+          xcodebuild build \
+            -project "$PROJECT_NAME.xcodeproj" \
+            -scheme "$SCHEME" \
             -configuration Release \
-            -destination "generic/platform=iOS" \
-            -archivePath "./build/VideoPlayer.xcarchive" \
+            -sdk iphoneos \
+            -arch arm64 \
+            IPHONEOS_DEPLOYMENT_TARGET=$IOS_VERSION \
+            BUILD_DIR="./build" \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO
 
-      # 2. 从固定路径取 app（100% 存在）
-      - name: Package IPA
+      # 2. 固定真实路径（从 build 目录取，绝对完整）
+      - name: Package Final IPA
         run: |
-          APP_PATH="./build/VideoPlayer.xcarchive/Products/Applications/${{ env.PROJECT_NAME }}.app"
-
-          # 授权
-          chmod +x "$APP_PATH/${{ env.PROJECT_NAME }}"
+          APP_DIR="./build/Release-iphoneos/$PROJECT_NAME.app"
+          echo "✅ 使用真实二进制路径: $APP_DIR"
+          
+          ls -la "$APP_DIR"
+          du -sh "$APP_DIR"
+          
+          # 权限
+          chmod +x "$APP_DIR/$PROJECT_NAME"
           
           # 清理签名
-          rm -rf "$APP_PATH/_CodeSignature" "$APP_PATH/embedded.mobileprovision"
+          rm -rf "$APP_DIR/_CodeSignature" "$APP_DIR/embedded.mobileprovision"
           
           # 打包
           mkdir -p Payload
-          cp -R "$APP_PATH" Payload/
+          cp -R "$APP_DIR" Payload/
           zip -ryq VideoPlayer.ipa Payload
-
+          
           ls -lh VideoPlayer.ipa
 
-      # 3. 上传
-      - name: Upload
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: VideoPlayer-Final-IPA
+          name: VideoPlayer-FINAL
           path: VideoPlayer.ipa
