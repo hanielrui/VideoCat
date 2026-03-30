@@ -1,6 +1,5 @@
 name: Build iOS
 
-
 on:
   push:
     branches: [main]
@@ -77,8 +76,7 @@ jobs:
           xcodebuild -exportArchive \
             -archivePath ./build/VideoPlayer.xcarchive \
             -exportPath ./build/VideoPlayer.ipa \
-            -exportOptionsPlist ./VideoPlayer/ExportOptions.plist \
-            CODE_SIGNING_ALLOWED=${{ env.CODE_SIGNING_ALLOWED }}
+            -exportOptionsPlist ./VideoPlayer/ExportOptions.plist
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
