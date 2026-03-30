@@ -1,0 +1,123 @@
+name: Build iOS
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  PROJECT_NAME: VideoPlayer
+  SCHEME_NAME: VideoPlayer
+  CODE_SIGN_IDENTITY: ""
+  CODE_SIGNING_REQUIRED: "NO"
+  CODE_SIGNING_ALLOWED: "NO"
+
+jobs:
+  build:
+    name: Build iOS App
+    runs-on: macos-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Show Swift version
+        run: swift -version
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v3
+        with:
+          path: |
+            Pods
+            ~/Library/Caches/CocoaPods
+            ~/.cocoapods
+          key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+
+      - name: Install CocoaPods
+        run: |
+          cd VideoPlayer
+          pod install --repo-update
+
+      - name: Build iOS App
+        run: |
+          cd VideoPlayer
+          xcodebuild build \
+            -workspace ${{ env.PROJECT_NAME }}.xcworkspace \
+            -scheme ${{ env.SCHEME_NAME }} \
+            -configuration Debug \
+            -destination 'platform=iOS Simulator,name=iPhone 15 Pro' \
+            CODE_SIGNING_ALLOWED=${{ env.CODE_SIGNING_ALLOWED }} \
+            CODE_SIGNING_REQUIRED=${{ env.CODE_SIGNING_REQUIRED }} \
+            CODE_SIGN_IDENTITY="${{ env.CODE_SIGN_IDENTITY }}"
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: build-output
+          path: |
+            VideoPlayer/build/Build/Products/Debug-iphonesimulator/*.app
+          retention-days: 7
+
+  archive:
+    name: Create IPA
+    runs-on: macos-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v3
+        with:
+          path: |
+            Pods
+            ~/Library/Caches/CocoaPods
+          key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
+
+      - name: Install CocoaPods
+        run: |
+          cd VideoPlayer
+          pod install
+
+      - name: Create IPA
+        run: |
+          cd VideoPlayer
+          xcodebuild archive \
+            -workspace ${{ env.PROJECT_NAME }}.xcworkspace \
+            -scheme ${{ env.SCHEME_NAME }} \
+            -configuration Release \
+            -archivePath ./build/VideoPlayer.xcarchive \
+            CODE_SIGNING_ALLOWED=${{ env.CODE_SIGNING_ALLOWED }}
+
+          xcodebuild -exportArchive \
+            -archivePath ./build/VideoPlayer.xcarchive \
+            -exportPath ./build/VideoPlayer.ipa \
+            -exportOptionsPlist ExportOptions.plist \
+            CODE_SIGNING_ALLOWED=${{ env.CODE_SIGNING_ALLOWED }}
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v3
+        with:
+          name: VideoPlayer-ipa
+          path: VideoPlayer/build/VideoPlayer.ipa
+
+      - name: Upload xcarchive
+        uses: actions/upload-artifact@v3
+        with:
+          name: VideoPlayer-xcarchive
+          path: VideoPlayer/build/VideoPlayer.xcarchive
