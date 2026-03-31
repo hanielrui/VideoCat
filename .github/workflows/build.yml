@@ -1,53 +1,33 @@
-name: Build iOS FOR TROLLSTORE ✅ FINAL
+name: Build VideoCat (影视猫)
+
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
-
-env:
-  PROJECT: VideoPlayer
-  SCHEME: VideoPlayer
 
 jobs:
   build:
-    runs-on: macos-14
+    runs-on: macos-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
 
-      - name: Select Xcode 15.4
-        run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
-
-      # 🔥 改用正常 build，不是 archive！！这是唯一解法！
-      - name: Build Release App
+      - name: Build iOS App
         run: |
-          xcodebuild build \
-            -project "$PROJECT.xcodeproj" \
-            -scheme "$SCHEME" \
+          xcodebuild build -project VideoPlayer.xcodeproj \
+            -scheme VideoPlayer \
+            -destination 'generic/platform=iOS' \
             -configuration Release \
-            -sdk iphoneos \
-            -arch arm64 \
-            BUILD_DIR="./build" \
             CODE_SIGNING_ALLOWED=NO
 
-      # 🔥 从真实路径打包，完整二进制！
-      - name: Package IPA
+      - name: Create IPA
         run: |
-          APP="./build/Release-iphoneos/$PROJECT.app"
-          echo "✅ 完整App路径：$APP"
-          du -sh "$APP"
-
-          # 复制Swift库
-          /Applications/Xcode_15.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-stdlib-tool --copy --scan-executable "$APP/$PROJECT" --platform iphoneos --destination "$APP/Frameworks"
-
-          chmod +x "$APP/$PROJECT"
           mkdir -p Payload
-          cp -R "$APP" Payload/
-          zip -ryq "$PROJECT-Troll.ipa" Payload
+          cp -r ~/Library/Developer/Xcode/DerivedData/Build/Products/Release-iphoneos/*.app Payload/
+          zip -9 -r VideoCat.ipa Payload/
 
-          ls -lh *.ipa
-
-      - name: Upload
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: VideoPlayer-TrollStore
-          path: "*.ipa"
+          name: VideoCat-iPA
+          path: VideoCat.ipa
