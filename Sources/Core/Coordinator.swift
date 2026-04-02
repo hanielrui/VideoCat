@@ -92,7 +92,17 @@ extension Coordinator {
     
     /// 默认的导航到播放器实现
     func navigateToPlayer(with url: String) {
-        let playerVC = PlayerViewController(url: url)
+        // 注意：此方法仅为协议默认实现，实际使用时需要提供依赖
+        // 真正的实现应该使用 AppContainer 和 PlayerPool
+        Logger.warning("Using default navigateToPlayer implementation without dependencies")
+        let engine = PlayerEngine()
+        let viewModel = PlayerViewModel(engine: engine)
+        let playerVC = PlayerViewController(
+            viewModel: viewModel,
+            gestureManager: nil,
+            urlValidator: DefaultURLValidator(),
+            url: url
+        )
         navigationController.pushViewController(playerVC, animated: true)
     }
 }

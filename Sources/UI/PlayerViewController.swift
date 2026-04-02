@@ -34,19 +34,9 @@ class PlayerViewController: UIViewController {
 
     // MARK: - 初始化方法
 
-    // 默认初始化（保持向后兼容）
-    convenience init(url: String = "") {
-        self.init(
-            viewModel: PlayerViewModel(),
-            gestureManager: nil,
-            urlValidator: DefaultURLValidator(),
-            url: url
-        )
-    }
-
     // 构造函数注入（便于单元测试）
     init(
-        viewModel: PlayerViewModel = PlayerViewModel(),
+        viewModel: PlayerViewModel,
         gestureManager: GestureManagerProtocol? = nil,
         urlValidator: URLValidatorProtocol = DefaultURLValidator(),
         url: String = ""

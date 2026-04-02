@@ -93,7 +93,7 @@ final class AppCoordinator: AppCoordinatorProtocol {
         Task { @MainActor in
             // 从播放器池获取播放器实例
             let player = await container.playerPool.acquirePlayer()
-            
+
             // 确保播放器符合 PlayerEngineProtocol（PlayerEngine 实例符合）
             let engine: PlayerEngineProtocol
             if let playerEngine = player as? PlayerEngineProtocol {
@@ -104,9 +104,10 @@ final class AppCoordinator: AppCoordinatorProtocol {
                 engine = PlayerEngine()
                 Logger.warning("Player from pool is not PlayerEngineProtocol, created new instance")
             }
-            
+
+            let viewModel = PlayerViewModel(engine: engine)
             let playerVC = PlayerViewController(
-                viewModel: PlayerViewModel(engine: engine),
+                viewModel: viewModel,
                 gestureManager: nil,
                 urlValidator: container.urlValidator,
                 url: url

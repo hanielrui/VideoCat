@@ -40,8 +40,8 @@ extension TimeInterval {
     var timeFormatted: String {
         Double(self).timeFormatted()
     }
-    
-    var shortTimeFormatted: String {
+
+    func shortTimeFormatted() -> String {
         Double(self).shortTimeFormatted()
     }
 }

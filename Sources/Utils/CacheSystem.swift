@@ -1,5 +1,7 @@
 import Foundation
 import Combine
+import UIKit
+import AVFoundation
 
 // MARK: - 缓存条目
 struct CacheEntry: Codable {
@@ -124,24 +126,24 @@ protocol CacheStorage {
 /// 注意：Actor 协议方法默认是异步的，调用者需要使用 await
 protocol CacheSystemProtocol {
     // 统一存储接口
-    func get<T>(forKey key: String, category: CacheCategory) -> T?
-    func set<T>(_ value: T, forKey key: String, category: CacheCategory, cost: Int?)
-    func getData(forKey key: String, category: CacheCategory) -> Data?
-    func setData(_ data: Data, forKey key: String, category: CacheCategory)
-    func remove(forKey key: String, category: CacheCategory)
-    
+    func get<T>(forKey key: String, category: CacheCategory) async -> T?
+    func set<T>(_ value: T, forKey key: String, category: CacheCategory, cost: Int?) async
+    func getData(forKey key: String, category: CacheCategory) async -> Data?
+    func setData(_ data: Data, forKey key: String, category: CacheCategory) async
+    func remove(forKey key: String, category: CacheCategory) async
+
     // 生命周期
-    func clearMemory()
-    func clearDisk()
-    func clearAll()
-    
+    func clearMemory() async
+    func clearDisk() async
+    func clearAll() async
+
     // 状态
-    func diskSize(for category: CacheCategory) -> Int64
+    func diskSize(for category: CacheCategory) async -> Int64
     var statistics: CacheStatistics { get }
     var statePublisher: AnyPublisher<CacheSystemState, Never> { get }
-    
+
     // 配置
-    func updateConfig(_ config: CacheSystemConfig)
+    func updateConfig(_ config: CacheSystemConfig) async
 }
 
 // MARK: - 统一缓存系统

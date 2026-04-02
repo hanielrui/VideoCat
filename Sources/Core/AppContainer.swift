@@ -57,8 +57,8 @@ final class AppContainer {
         jellyfinAPI: JellyfinAPIClient? = nil,
         playerPool: PlayerPool = .shared,
         videoCache: VideoCache = .shared,
-        imageCache: ImageCacheProtocol = .shared,
-        networkMonitor: NetworkMonitorProtocol = .shared
+        imageCache: ImageCacheProtocol = ImageCache.shared,
+        networkMonitor: NetworkMonitorProtocol = NetworkMonitor.shared
     ) {
         self.networkManager = networkManager
 

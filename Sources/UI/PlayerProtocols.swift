@@ -1,5 +1,6 @@
 import AVFoundation
 import UIKit
+import Combine
 
 // MARK: - 播放状态
 
@@ -182,6 +183,20 @@ struct PlayerStateStruct: Equatable {
     }
 }
 
+// MARK: - Equatable 实现
+
+extension PlayerStateStruct {
+    static func == (lhs: PlayerStateStruct, rhs: PlayerStateStruct) -> Bool {
+        return lhs.status == rhs.status &&
+               lhs.currentTime == rhs.currentTime &&
+               lhs.duration == rhs.duration &&
+               lhs.bufferProgress == rhs.bufferProgress &&
+               lhs.progress == rhs.progress &&
+               lhs.url == rhs.url
+        // error 不参与比较
+    }
+}
+
 // MARK: - 播放错误
 
 /// 播放器相关错误类型
@@ -208,10 +223,24 @@ enum PlayerError: LocalizedError {
     }
 }
 
+extension PlayerError: Equatable {
+    static func == (lhs: PlayerError, rhs: PlayerError) -> Bool {
+        switch (lhs, rhs) {
+        case (.invalidURL, .invalidURL): return true
+        case (.loadFailed, .loadFailed): return true
+        case (.playbackFailed, .playbackFailed): return true
+        case (.buffering, .buffering): return true
+        case (.unknown, .unknown): return true
+        default: return false
+        }
+    }
+}
+
 // MARK: - 统一播放器协议
 
 /// 播放器统一接口协议
 /// 整合 PlayerCoreProtocol 和 PlayerEngineProtocol 的功能
+@MainActor
 protocol Player: AnyObject {
     /// 播放器实例
     var player: AVPlayer { get }
@@ -272,6 +301,7 @@ protocol Player: AnyObject {
 
 /// 播放器核心接口协议（保持向后兼容）
 /// 新代码应使用 Player 协议
+@MainActor
 protocol PlayerCoreProtocol: Player {
     /// 当前播放状态（保持向后兼容）
     var state: PlayerState { get }

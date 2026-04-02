@@ -15,7 +15,7 @@ protocol APIServiceProtocol {
 // MARK: - 基础 API 服务实现
 /// 基于 NetworkService 的通用 API 服务实现
 class BaseAPIService: APIServiceProtocol {
-    typealias EndpointType = Endpoint
+    typealias EndpointType = APIEndpoint
 
     private let networkService: NetworkService
 
