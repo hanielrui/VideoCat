@@ -32,6 +32,14 @@ jobs:
       - name: Show Swift version
         run: swift -version
 
+      - name: Install XcodeGen
+        run: |
+          brew install xcodegen
+          xcodegen version
+
+      - name: Generate Xcode project with XcodeGen
+        run: xcodegen generate --spec project.yml
+
       - name: Build iOS App
         run: |
           xcodebuild build \
@@ -64,6 +72,14 @@ jobs:
       - name: Select Xcode
         run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
+      - name: Install XcodeGen
+        run: |
+          brew install xcodegen
+          xcodegen version
+
+      - name: Generate Xcode project with XcodeGen
+        run: xcodegen generate --spec project.yml
+
       - name: Create IPA
         run: |
           # Create build directory
@@ -81,11 +97,11 @@ jobs:
           # Package .app into IPA manually using zip
           APP_PATH="./build/VideoPlayer.xcarchive/Products/Applications/VideoPlayer.app"
           IPA_PATH="./build/VideoPlayer.ipa"
-          
+
           # Create Payload directory
           mkdir -p ./build/Payload
           cp -R "$APP_PATH" ./build/Payload/
-          
+
           # Create IPA using zip
           cd ./build
           zip -qr "$IPA_PATH" Payload
