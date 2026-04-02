@@ -142,7 +142,7 @@ enum NetworkError: LocalizedError {
         case .notFound(let resource):
             return "Resource not found: \(resource)"
         case .conflict(let msg):
-            return msg ?? "Conflict"
+            return msg
         case .serverUnavailable:
             return "Service unavailable"
         case .internalServerError:
@@ -353,7 +353,7 @@ class NetworkManager: NetworkService {
             return
         }
 
-        if let composite = existingChain as? CompositeInterceptor {
+        if existingChain is CompositeInterceptor {
             // 扩展现有组合
             // 这里简化处理，重新创建组合
             let newInterceptors = [interceptor] + [existingChain]

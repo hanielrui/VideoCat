@@ -55,6 +55,7 @@ protocol NavigationActionHandler: AnyObject {
 // MARK: - AppCoordinator 协议
 
 /// 应用级别协调器协议
+@MainActor
 protocol AppCoordinatorProtocol: Coordinator, NavigationActionHandler {
     /// 导航到登录页面
     func navigateToLogin()

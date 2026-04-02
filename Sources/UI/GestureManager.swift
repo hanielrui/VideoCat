@@ -43,10 +43,8 @@ class GestureManager: NSObject, GestureManagerProtocol {
             if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
                let window = scene.windows.first(where: { $0.isKeyWindow }) {
                 window.addSubview(volumeView)
-            } else if let window = UIApplication.shared.windows.first(where: { $0.isKeyWindow }) {
-                // 兼容旧版 iOS
-                window.addSubview(volumeView)
             }
+        }
 
             for v in volumeView.subviews {
                 if let s = v as? UISlider {
@@ -137,7 +135,7 @@ class GestureManager: NSObject, GestureManagerProtocol {
         player.seek(to: CMTime(seconds: target, preferredTimescale: 1))
 
         // 显示快进/快退反馈
-        let seconds = Int(delta)
+        _ = Int(delta)
         showFeedback(type: .seek, value: CGFloat(delta), currentValue: target, totalValue: duration)
     }
 

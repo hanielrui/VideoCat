@@ -126,7 +126,7 @@ final class AppCoordinator: AppCoordinatorProtocol {
     func navigateToPlayer(with item: MediaItem) {
         // 通过依赖注入获取播放 URL
         guard let urlString = container.jellyfinAPI.getPlayURL(itemId: item.id),
-              let url = URL(string: urlString) else {
+              _ = URL(string: urlString) else {
             Logger.error("Failed to build playback URL for item: \(item.id)")
             return
         }
@@ -148,7 +148,7 @@ final class AppCoordinator: AppCoordinatorProtocol {
     /// 播放器使用完毕后归还到池中
     func releasePlayer(_ player: PlayerCoreProtocol) {
         Task { [weak self] in
-            if let playerEngine = player as? Player {
+            if let playerEngine = player as! Player {
                 await self?.container.playerPool.releasePlayer(playerEngine)
             } else {
                 Logger.warning("Player is not a Player type, cannot release to pool")

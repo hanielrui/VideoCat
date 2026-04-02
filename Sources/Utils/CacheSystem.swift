@@ -209,7 +209,7 @@ actor CacheSystem: CacheSystemProtocol {
     }
     
     // MARK: - 统一存储接口
-    func get<T: AnyObject>(forKey key: String, category: CacheCategory) -> T? {
+    func get<T: AnyObject>(forKey key: String, category: CacheCategory) async -> T? {
         let compositeKey = makeKey(key, category: category)
 
         // 1. 内存缓存优先
@@ -234,11 +234,11 @@ actor CacheSystem: CacheSystemProtocol {
         return nil
     }
 
-    func set<T: AnyObject>(_ value: T, forKey key: String, category: CacheCategory, cost: Int?) {
+    func set<T: AnyObject>(_ value: T, forKey key: String, category: CacheCategory, cost: Int?) async {
         let compositeKey = makeKey(key, category: category)
 
         // 内存缓存（受 cost 参数控制）
-        memoryStorage.set(value, forKey: compositeKey, cost: cost)
+        memoryStorage.set(value as AnyObject, forKey: compositeKey, cost: cost)
 
         // 异步写入磁盘（Data 类型）- 使用 Task 避免阻塞 actor
         // 注意：磁盘存储不受 cost 参数影响，成本仅应用于内存缓存
@@ -253,7 +253,7 @@ actor CacheSystem: CacheSystemProtocol {
     
 
     
-    func getData(forKey key: String, category: CacheCategory) -> Data? {
+    func getData(forKey key: String, category: CacheCategory) async -> Data? {
         let compositeKey = makeKey(key, category: category)
         
         // 1. 内存缓存优先
@@ -304,7 +304,7 @@ actor CacheSystem: CacheSystemProtocol {
         Logger.info("[CacheSystem] Memory cache cleared")
     }
     
-    func clearDisk() {
+    func clearDisk() async {
         diskStorage.clear()
         _statistics.diskItemCount = 0
         _statistics.diskSize = 0
@@ -312,19 +312,19 @@ actor CacheSystem: CacheSystemProtocol {
         Logger.info("[CacheSystem] Disk cache cleared")
     }
     
-    func clearAll() {
-        clearMemory()
-        clearDisk()
+    func clearAll() async {
+        await clearMemory()
+        await clearDisk()
         _statistics = CacheStatistics()
         publishStatistics()
     }
     
     // MARK: - 状态查询
-    func diskSize(for category: CacheCategory) -> Int64 {
+    func diskSize(for category: CacheCategory) async -> Int64 {
         diskStorage.totalSize(for: category)
     }
     
-    func updateConfig(_ config: CacheSystemConfig) {
+    func updateConfig(_ config: CacheSystemConfig) async {
         self.config = config
     }
     
