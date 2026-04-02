@@ -209,7 +209,7 @@ actor CacheSystem: CacheSystemProtocol {
     }
     
     // MARK: - 统一存储接口
-    func get<T: AnyObject>(forKey key: String, category: CacheCategory) async -> T? {
+    func get<T>(forKey key: String, category: CacheCategory) async -> T? {
         let compositeKey = makeKey(key, category: category)
 
         // 1. 内存缓存优先
@@ -223,7 +223,7 @@ actor CacheSystem: CacheSystemProtocol {
         if let data = diskStorage.readData(forKey: compositeKey, category: category) {
             // 回填内存
             if let value = convertFromData(data, type: T.self) {
-                memoryStorage.set(value, forKey: compositeKey, cost: data.count)
+                memoryStorage.set(value as AnyObject, forKey: compositeKey, cost: data.count)
                 recordHit()
                 updateAccessTime(compositeKey, category: category)
                 return value
@@ -234,7 +234,7 @@ actor CacheSystem: CacheSystemProtocol {
         return nil
     }
 
-    func set<T: AnyObject>(_ value: T, forKey key: String, category: CacheCategory, cost: Int?) async {
+    func set<T>(_ value: T, forKey key: String, category: CacheCategory, cost: Int?) async {
         let compositeKey = makeKey(key, category: category)
 
         // 内存缓存（受 cost 参数控制）

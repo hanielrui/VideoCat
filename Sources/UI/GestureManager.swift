@@ -44,7 +44,6 @@ class GestureManager: NSObject, GestureManagerProtocol {
                let window = scene.windows.first(where: { $0.isKeyWindow }) {
                 window.addSubview(volumeView)
             }
-        }
 
             for v in volumeView.subviews {
                 if let s = v as? UISlider {
