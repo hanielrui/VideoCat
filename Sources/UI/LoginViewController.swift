@@ -190,6 +190,11 @@ class LoginViewController: BaseViewController {
             }
         }
     }
+
+    // MARK: - 生命周期
+    deinit {
+        Logger.debug("LoginViewController deinitialized: \(String(describing: self))")
+    }
 }
 
 // MARK: - UITextFieldDelegate
@@ -204,10 +209,5 @@ extension LoginViewController: UITextFieldDelegate {
             login()
         }
         return true
-    }
-
-    // MARK: - 生命周期
-    deinit {
-        Logger.debug("LoginViewController deinitialized: \(String(describing: self))")
     }
 }

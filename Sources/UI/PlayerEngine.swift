@@ -34,6 +34,9 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
     private var seekTask: Task<Void, Never>?
     private let seekDebounceInterval: TimeInterval = 0.3
 
+    // 订阅管理
+    private var cancellables = Set<AnyCancellable>()
+
     // Combine Publishers
     private let progressSubject = PassthroughSubject<(Double, Double), Never>()
     private let bufferingSubject = CurrentValueSubject<Bool, Never>(false)
@@ -416,6 +419,17 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
 
         let time = CMTime(seconds: seconds, preferredTimescale: 600)
         player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero)
+    }
+
+    // MARK: - 时间观察者
+    func addTimeObserver(handler: @escaping @MainActor (Double, Double) -> Void) {
+        progressPublisher
+            .sink { current, duration in
+                Task { @MainActor in
+                    handler(current, duration)
+                }
+            }
+            .store(in: &cancellables)
     }
 
     // MARK: - 清理

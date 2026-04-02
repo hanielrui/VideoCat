@@ -778,7 +778,7 @@ extension CacheSystem {
 
     /// 内存缓存（直接缓存 AVURLAsset）
     /// 配置限制以防止内存溢出
-    private nonisolated static let assetMemoryCache: NSCache<NSString, AVURLAsset> = {
+    private static let assetMemoryCache: NSCache<NSString, AVURLAsset> = {
         let cache = NSCache<NSString, AVURLAsset>()
         cache.countLimit = 10           // 最多缓存 10 个 Asset
         cache.totalCostLimit = 50 * 1024 * 1024  // 50MB 内存限制

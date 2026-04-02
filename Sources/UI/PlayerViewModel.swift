@@ -27,6 +27,7 @@ final class PlayerViewModel: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - 初始化
+    @MainActor
     init(engine: PlayerEngineProtocol = PlayerEngine()) {
         self.engine = engine
         bindEngine()

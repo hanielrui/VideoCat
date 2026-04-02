@@ -23,11 +23,11 @@ class BaseAPIService: APIServiceProtocol {
         self.networkService = networkService
     }
 
-    func request<T: Decodable>(_ endpoint: Endpoint) async throws -> T {
+    func request<T: Decodable>(_ endpoint: APIEndpoint) async throws -> T {
         try await networkService.request(endpoint)
     }
 
-    func requestData(_ endpoint: Endpoint) async throws -> Data {
+    func requestData(_ endpoint: APIEndpoint) async throws -> Data {
         try await networkService.request(endpoint)
     }
 }

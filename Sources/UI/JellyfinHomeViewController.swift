@@ -241,6 +241,11 @@ class JellyfinHomeViewController: BaseViewController {
         // 使用协调器导航到播放器
         coordinator?.navigateToPlayer(with: urlString)
     }
+
+    // MARK: - 生命周期
+    deinit {
+        Logger.debug("JellyfinHomeViewController deinitialized: \(String(describing: self))")
+    }
 }
 
 // MARK: - UITableViewDataSourcePrefetching
@@ -252,10 +257,5 @@ extension JellyfinHomeViewController: UITableViewDataSourcePrefetching {
 
     func tableView(_ tableView: UITableView, cancelPrefetchingForRowsAt indexPaths: [IndexPath]) {
         // 取消预取
-    }
-
-    // MARK: - 生命周期
-    deinit {
-        Logger.debug("JellyfinHomeViewController deinitialized: \(String(describing: self))")
     }
 }
