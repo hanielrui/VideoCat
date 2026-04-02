@@ -28,7 +28,7 @@ final class PlayerViewModel: ObservableObject {
 
     // MARK: - 初始化
     @MainActor
-    init(engine: PlayerEngineProtocol = PlayerEngine()) {
+    init(engine: PlayerEngineProtocol) {
         self.engine = engine
         bindEngine()
     }

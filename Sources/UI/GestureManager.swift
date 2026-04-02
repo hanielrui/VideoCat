@@ -2,8 +2,7 @@ import UIKit
 import AVFoundation
 import MediaPlayer
 
-/// 手势管理器 - 使用 @MainActor 保证 UI 操作在主线程执行
-@MainActor
+/// 手势管理器 - 手动确保 UI 操作在主线程执行
 class GestureManager: NSObject, GestureManagerProtocol {
 
     private weak var view: UIView?
@@ -75,13 +74,14 @@ class GestureManager: NSObject, GestureManagerProtocol {
         }
     }
 
+    @MainActor
     @objc private func pan(_ pan: UIPanGestureRecognizer) {
         switch pan.state {
         case .began:
             startPoint = pan.location(in: view)
             initialBrightness = UIScreen.main.brightness
 
-            // 确保 AVAudioSession 操作在主线程执行（@MainActor 已保证）
+            // 确保 AVAudioSession 操作在主线程执行
             setupAudioSession()
 
             isHorizontal = nil
@@ -124,6 +124,7 @@ class GestureManager: NSObject, GestureManagerProtocol {
         }
     }
 
+    @MainActor
     private func seek(_ dx: CGFloat) {
         guard let player = player,
               let duration = player.currentItem?.duration.seconds,
@@ -140,6 +141,7 @@ class GestureManager: NSObject, GestureManagerProtocol {
         showFeedback(type: .seek, value: CGFloat(delta), currentValue: target, totalValue: duration)
     }
 
+    @MainActor
     private func brightness(_ dy: CGFloat) {
         let delta = -dy / 300
         let newBrightness = max(0, min(1, initialBrightness + delta))
@@ -149,6 +151,7 @@ class GestureManager: NSObject, GestureManagerProtocol {
         showFeedback(type: .brightness, value: newBrightness)
     }
 
+    @MainActor
     private func volume(_ dy: CGFloat) {
         let delta = Float(-dy / 300)
         let newVolume = max(0, min(1, initialVolume + delta))
@@ -163,6 +166,7 @@ class GestureManager: NSObject, GestureManagerProtocol {
         showFeedback(type: .volume, value: CGFloat(newVolume))
     }
 
+    @MainActor
     private func setVolume(_ volume: Float) {
         do {
             let audioSession = AVAudioSession.sharedInstance()
@@ -187,6 +191,7 @@ class GestureManager: NSObject, GestureManagerProtocol {
         }
     }
 
+    @MainActor
     private func showFeedback(type: FeedbackType, value: CGFloat, currentValue: Double? = nil, totalValue: Double? = nil) {
         guard let view = view else { return }
 
@@ -276,6 +281,7 @@ class GestureManager: NSObject, GestureManagerProtocol {
     }
 
     // MARK: - 清理
+    @MainActor
     private func cleanup() {
         if let gesture = panGesture, let view = view {
             view.removeGestureRecognizer(gesture)

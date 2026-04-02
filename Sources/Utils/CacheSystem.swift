@@ -198,12 +198,14 @@ actor CacheSystem: CacheSystemProtocol {
         self.config = config
         self.memoryStorage = MemoryStorage()
         self.diskStorage = DiskStorage()
-        
+
         // 初始化策略
         self.policy = CachePolicyFactory.create(policy: config.policy, config: config)
-        
-        applyConfig()
-        startLifecycle()
+
+        Task {
+            await applyConfig()
+            await startLifecycle()
+        }
     }
     
     // MARK: - 统一存储接口
