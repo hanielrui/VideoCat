@@ -5,22 +5,22 @@ import UIKit
 /// 图片缓存协议，支持依赖注入和单元测试
 protocol ImageCacheProtocol: AnyObject {
     /// 获取图片
-    func get(for key: String) -> UIImage?
+    func get(for key: String) async -> UIImage?
 
     /// 存储图片
-    func set(_ image: UIImage, for key: String)
+    func set(_ image: UIImage, for key: String) async
 
     /// 移除图片
-    func remove(for key: String)
+    func remove(for key: String) async
 
     /// 异步加载图片
     func load(from url: URL) async -> UIImage?
 
     /// 清除内存缓存
-    func clearMemoryCache()
+    func clearMemoryCache() async
 
     /// 清除所有缓存
-    func clearAll()
+    func clearAll() async
 }
 
 // MARK: - ImageCache 实现
@@ -99,17 +99,20 @@ extension UIImageView {
         let key = url.absoluteString
         let cache = injectedImageCache ?? ImageCache.shared
 
-        // 检查缓存
-        if let cached = cache.get(for: key) {
-            self.image = cached
-            return
-        }
-
-        // 取消之前请求
+        // 异步加载
         imageTask?.cancel()
 
         // 异步加载
         imageTask = Task { [weak self] in
+            // 检查缓存
+            if let cached = await cache.get(for: key) {
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    self?.image = cached
+                }
+                return
+            }
+
             let loadedImage = await cache.load(from: url)
 
             guard !Task.isCancelled else { return }

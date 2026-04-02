@@ -189,7 +189,7 @@ enum NetworkError: LocalizedError {
         case 404:
             return .notFound(resource: httpResponse.url?.path ?? "unknown")
         case 409:
-            return .conflict(message)
+            return .conflict(message ?? "Conflict")
         case 500...599:
             return .serverError(statusCode: statusCode, message: message)
         default:
@@ -209,8 +209,6 @@ enum NetworkError: LocalizedError {
                 return .cancelled
             case .cannotFindHost, .cannotConnectToHost, .serverCertificateUntrusted:
                 return .connectionFailed(urlError.localizedDescription)
-            case .notReachable:
-                return .networkUnreachable
             default:
                 return .unknown(underlying: error)
             }
@@ -396,7 +394,7 @@ class NetworkManager: NetworkService {
         }
 
         // 记录请求开始时间
-        timingInterceptor?.adapt(request)
+        _ = await timingInterceptor?.adapt(request)
 
         // 发送请求并处理重试
         let (data, httpResponse) = try await sendWithRetry(request: request, config: config)
@@ -432,7 +430,7 @@ class NetworkManager: NetworkService {
                 let (data, response) = try await session.data(for: currentRequest)
 
                 guard let httpResponse = response as? HTTPURLResponse else {
-                    throw NetworkError.unknown(NSError(domain: "Invalid response", code: -1))
+                    throw NetworkError.unknown(underlying: NSError(domain: "Invalid response", code: -1))
                 }
 
                 // 检查是否需要重试（拦截器决定）
@@ -471,7 +469,7 @@ class NetworkManager: NetworkService {
             }
         }
 
-        throw lastError ?? NetworkError.unknown(NSError(domain: "Request failed", code: -1))
+        throw lastError ?? NetworkError.unknown(underlying: NSError(domain: "Request failed", code: -1))
     }
 
     // MARK: - 泛型请求

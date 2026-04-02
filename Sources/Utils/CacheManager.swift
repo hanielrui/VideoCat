@@ -29,18 +29,18 @@ struct CacheConfig {
 // MARK: - 缓存服务协议
 /// 统一缓存服务接口
 protocol CacheService {
-    func get<T: AnyObject>(forKey key: String, type: CacheType) -> T?
-    func set<T: AnyObject>(_ value: T, forKey key: String, type: CacheType, cost: Int?)
+    func get<T: AnyObject>(forKey key: String, type: CacheType) async -> T?
+    func set<T: AnyObject>(_ value: T, forKey key: String, type: CacheType, cost: Int?) async
 
-    func getData(forKey key: String, type: CacheType) -> Data?
-    func setData(_ data: Data, forKey key: String, type: CacheType)
+    func getData(forKey key: String, type: CacheType) async -> Data?
+    func setData(_ data: Data, forKey key: String, type: CacheType) async
 
-    func remove(forKey key: String, type: CacheType)
-    func clearMemory()
-    func clearDisk()
-    func clearAll()
+    func remove(forKey key: String, type: CacheType) async
+    func clearMemory() async
+    func clearDisk() async
+    func clearAll() async
 
-    func diskSize() -> Int64
+    func diskSize() async -> Int64
 }
 
 // MARK: - 统一缓存管理器
@@ -80,50 +80,52 @@ final class CacheManager: CacheService {
             .data: .init(ttlInterval: TimeInterval(CacheConfig().expirationDaysMap[.data] ?? 3) * 24 * 60 * 60)
         ]
 
-        CacheSystem.shared.updateConfig(systemConfig)
+        Task {
+            await CacheSystem.shared.updateConfig(systemConfig)
+        }
     }
 
     // MARK: - CacheService 实现（直接代理到 CacheSystem）
 
-    func get<T: AnyObject>(forKey key: String, type: CacheType) -> T? {
+    func get<T: AnyObject>(forKey key: String, type: CacheType) async -> T? {
         guard let category = Self.categoryMapping[type] else { return nil }
-        return CacheSystem.shared.get(forKey: key, category: category)
+        return await CacheSystem.shared.get(forKey: key, category: category)
     }
 
-    func set<T: AnyObject>(_ value: T, forKey key: String, type: CacheType, cost: Int?) {
+    func set<T: AnyObject>(_ value: T, forKey key: String, type: CacheType, cost: Int?) async {
         guard let category = Self.categoryMapping[type] else { return }
-        CacheSystem.shared.set(value, forKey: key, category: category, cost: cost)
+        await CacheSystem.shared.set(value, forKey: key, category: category, cost: cost)
     }
 
-    func getData(forKey key: String, type: CacheType) -> Data? {
+    func getData(forKey key: String, type: CacheType) async -> Data? {
         guard let category = Self.categoryMapping[type] else { return nil }
-        return CacheSystem.shared.getData(forKey: key, category: category)
+        return await CacheSystem.shared.getData(forKey: key, category: category)
     }
 
-    func setData(_ data: Data, forKey key: String, type: CacheType) {
+    func setData(_ data: Data, forKey key: String, type: CacheType) async {
         guard let category = Self.categoryMapping[type] else { return }
-        CacheSystem.shared.setData(data, forKey: key, category: category)
+        await CacheSystem.shared.setData(data, forKey: key, category: category)
     }
 
-    func remove(forKey key: String, type: CacheType) {
+    func remove(forKey key: String, type: CacheType) async {
         guard let category = Self.categoryMapping[type] else { return }
-        CacheSystem.shared.remove(forKey: key, category: category)
+        await CacheSystem.shared.remove(forKey: key, category: category)
     }
 
-    func clearMemory() {
-        CacheSystem.shared.clearMemory()
+    func clearMemory() async {
+        await CacheSystem.shared.clearMemory()
     }
 
-    func clearDisk() {
-        CacheSystem.shared.clearDisk()
+    func clearDisk() async {
+        await CacheSystem.shared.clearDisk()
     }
 
-    func clearAll() {
-        CacheSystem.shared.clearAll()
+    func clearAll() async {
+        await CacheSystem.shared.clearAll()
     }
 
-    func diskSize() -> Int64 {
-        CacheSystem.shared.diskSize(for: .data)
+    func diskSize() async -> Int64 {
+        return await CacheSystem.shared.diskSize(for: .data)
     }
 
     // MARK: - 便捷属性（直接代理到 CacheSystem）

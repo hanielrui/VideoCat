@@ -77,19 +77,20 @@ protocol AppCoordinatorProtocol: Coordinator, NavigationActionHandler {
 
 // MARK: - Coordinator 默认实现
 
+@MainActor
 extension Coordinator {
     /// 默认的导航到登录页面实现
     func navigateToLogin() {
         let loginVC = LoginViewController()
         navigationController.setViewControllers([loginVC], animated: true)
     }
-    
+
     /// 默认的导航到首页实现
     func navigateToHome() {
         let homeVC = JellyfinHomeViewController()
         navigationController.pushViewController(homeVC, animated: true)
     }
-    
+
     /// 默认的导航到播放器实现
     func navigateToPlayer(with url: String) {
         // 注意：此方法仅为协议默认实现，实际使用时需要提供依赖

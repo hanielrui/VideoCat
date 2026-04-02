@@ -123,13 +123,13 @@ enum LoginValidationError: LocalizedError {
 // MARK: - Jellyfin API 协议
 
 /// Jellyfin API 客户端接口协议，便于单元测试 mock
-protocol JellyfinAPIClient {
+protocol JellyfinAPIClient: AnyObject {
     /// 是否已登录
     var isLoggedIn: Bool { get }
 
     /// 当前认证 Token
     var token: String { get set }
-    
+
     /// 服务器基础 URL
     var baseURL: String { get set }
 

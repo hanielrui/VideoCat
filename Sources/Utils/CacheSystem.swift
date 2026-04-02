@@ -396,7 +396,7 @@ actor CacheSystem: CacheSystemProtocol {
         cleanupTask?.cancel()
         cleanupTask = Task { [weak self] in
             while !Task.isCancelled {
-                guard let interval = self?.config.autoCleanupInterval else { break }
+                guard let interval = await self?.config.autoCleanupInterval else { break }
                 try? await Task.sleep(nanoseconds: UInt64(interval) * 1_000_000_000)
                 await self?.performCleanupIfNeeded()
             }
@@ -705,17 +705,17 @@ private extension String {
 extension CacheSystem {
 
     /// 获取图片
-    func image(for key: String) -> UIImage? {
+    func image(for key: String) async -> UIImage? {
         // 先从内存缓存获取
-        if let cached: UIImage = get(forKey: key, category: .image) {
+        if let cached: UIImage = await get(forKey: key, category: .image) {
             return cached
         }
 
         // 从数据加载
-        if let data = getData(forKey: key, category: .image),
+        if let data = await getData(forKey: key, category: .image),
            let image = UIImage(data: data) {
             // 回填内存缓存
-            set(image, forKey: key, category: .image, cost: data.count)
+            await set(image, forKey: key, category: .image, cost: data.count)
             return image
         }
 
@@ -723,28 +723,37 @@ extension CacheSystem {
     }
 
     /// 存储图片
-    func setImage(_ image: UIImage, for key: String) {
+    func setImage(_ image: UIImage, for key: String) async {
         // 内存缓存
-        set(image, forKey: key, category: .image, cost: nil)
+        await set(image, forKey: key, category: .image, cost: nil)
 
         // 磁盘缓存（异步）- 由于已经在 actor 中，使用 Task
         Task {
             let data: Data?
-            if image.hasAlpha {
-                data = image.pngData()
+            // 判断图片是否有透明通道
+            if let cgImage = image.cgImage, let alphaInfo = CGImageAlphaInfo(rawValue: cgImage.alphaInfo.rawValue) {
+                if alphaInfo == .none || alphaInfo == .noneSkipFirst || alphaInfo == .noneSkipLast {
+                    data = image.jpegData(compressionQuality: 0.8)
+                } else {
+                    data = image.pngData()
+                }
+            } else if let ciImage = image.ciImage {
+                // CIImage 的情况
+                data = ciImage.hasAlpha ? image.pngData() : image.jpegData(compressionQuality: 0.8)
             } else {
-                data = image.jpegData(compressionQuality: 0.8)
+                // 默认使用 PNG
+                data = image.pngData()
             }
 
             if let imageData = data {
-                setData(imageData, forKey: key, category: .image)
+                await setData(imageData, forKey: key, category: .image)
             }
         }
     }
 
     /// 移除图片
-    func removeImage(for key: String) {
-        remove(forKey: key, category: .image)
+    func removeImage(for key: String) async {
+        await remove(forKey: key, category: .image)
     }
 
     /// 异步加载图片（Swift Concurrency）
@@ -752,7 +761,7 @@ extension CacheSystem {
         let key = url.absoluteString
 
         // 同步检查缓存
-        if let cached = image(for: key) {
+        if let cached = await image(for: key) {
             return cached
         }
 
@@ -764,7 +773,7 @@ extension CacheSystem {
             }
 
             // 缓存
-            setImage(image, for: key)
+            await setImage(image, for: key)
 
             return image
         } catch {

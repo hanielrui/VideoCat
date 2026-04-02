@@ -294,7 +294,9 @@ class GestureManager: NSObject, GestureManagerProtocol {
     }
 
     deinit {
-        cleanup()
+        Task { @MainActor in
+            cleanup()
+        }
         Logger.debug("GestureManager deinitialized")
     }
 }

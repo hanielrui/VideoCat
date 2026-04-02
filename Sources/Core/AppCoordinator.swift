@@ -64,26 +64,28 @@ final class AppCoordinator: AppCoordinatorProtocol {
 
     // MARK: - 页面导航
 
+    @MainActor
     func navigateToLogin() {
         // 清除用户数据
         container.jellyfinAPI.logout()
-        
+
         Task { [weak self] in
             await self?.container.playerPool.clearPool()
         }
-        
+
         let loginVC = LoginViewController()
         loginVC.coordinator = self
         navigationController.setViewControllers([loginVC], animated: true)
-        
+
         Logger.Navigation.navigateToLogin()
     }
 
+    @MainActor
     func navigateToHome() {
         let homeVC = JellyfinHomeViewController()
         homeVC.coordinator = self
         navigationController.pushViewController(homeVC, animated: true)
-        
+
         Logger.Navigation.navigateToHome()
     }
 
@@ -114,9 +116,9 @@ final class AppCoordinator: AppCoordinatorProtocol {
             )
             playerVC.coordinator = self
             playerVC.player = player // 保存引用以便在 deinit 中归还
-            
+
             navigationController.pushViewController(playerVC, animated: true)
-            
+
             Logger.Navigation.navigateToPlayer(url: url)
         }
     }
@@ -136,10 +138,10 @@ final class AppCoordinator: AppCoordinatorProtocol {
         Task { [weak self] in
             await self?.container.playerPool.clearPool()
         }
-        
+
         // 返回登录页
         navigateToLogin()
-        
+
         Logger.Auth.logout()
     }
 
