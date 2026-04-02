@@ -53,12 +53,6 @@ targets:
         UIBackgroundModes:
           - audio
         ITSAppUsesNonExemptEncryption: false
-    dependencies:
-      - target: VideoPlayerTests
-        embed: true
-        codeSign: true
-        copy:
-          destination: executables
 
   VideoPlayerTests:
     type: bundle.unit-test
