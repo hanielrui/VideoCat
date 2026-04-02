@@ -17,6 +17,7 @@ class PlayerViewController: UIViewController {
     private var gesture: GestureManagerProtocol?
     private let urlValidator: URLValidatorProtocol
     weak var player: Player?
+    weak var coordinator: AppCoordinatorProtocol?
 
     // MARK: - 属性
     private var url: String = "" {

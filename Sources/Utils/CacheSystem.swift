@@ -209,16 +209,16 @@ actor CacheSystem: CacheSystemProtocol {
     }
     
     // MARK: - 统一存储接口
-    func get<T>(forKey key: String, category: CacheCategory) -> T? {
+    func get<T: AnyObject>(forKey key: String, category: CacheCategory) -> T? {
         let compositeKey = makeKey(key, category: category)
-        
+
         // 1. 内存缓存优先
-        if let value = memoryStorage.object(forKey: compositeKey) as? T {
+        if let value: T = memoryStorage.object(forKey: compositeKey) as? T {
             recordHit()
             updateAccessTime(compositeKey, category: category)
             return value
         }
-        
+
         // 2. 磁盘缓存
         if let data = diskStorage.readData(forKey: compositeKey, category: category) {
             // 回填内存
@@ -229,16 +229,16 @@ actor CacheSystem: CacheSystemProtocol {
                 return value
             }
         }
-        
+
         recordMiss()
         return nil
     }
-    
-    func set<T>(_ value: T, forKey key: String, category: CacheCategory, cost: Int?) {
+
+    func set<T: AnyObject>(_ value: T, forKey key: String, category: CacheCategory, cost: Int?) {
         let compositeKey = makeKey(key, category: category)
 
         // 内存缓存（受 cost 参数控制）
-        memoryStorage.set(value as AnyObject, forKey: compositeKey, cost: cost)
+        memoryStorage.set(value, forKey: compositeKey, cost: cost)
 
         // 异步写入磁盘（Data 类型）- 使用 Task 避免阻塞 actor
         // 注意：磁盘存储不受 cost 参数影响，成本仅应用于内存缓存
@@ -430,8 +430,8 @@ actor CacheSystem: CacheSystemProtocol {
     }
     
     // MARK: - 数据转换
-    
-    private func convertToData<T>(_ value: T) -> Data? {
+
+    private func convertToData<T: Encodable>(_ value: T) -> Data? {
         if let data = value as? Data {
             return data
         }
@@ -440,8 +440,8 @@ actor CacheSystem: CacheSystemProtocol {
         }
         return try? JSONEncoder().encode(value)
     }
-    
-    private func convertFromData<T>(_ data: Data, type: T.Type) -> T? {
+
+    private func convertFromData<T: Decodable>(_ data: Data, type: T.Type) -> T? {
         if type == Data.self {
             return data as? T
         }
@@ -738,8 +738,8 @@ extension CacheSystem {
                     data = image.pngData()
                 }
             } else if let ciImage = image.ciImage {
-                // CIImage 的情况
-                data = ciImage.hasAlpha ? image.pngData() : image.jpegData(compressionQuality: 0.8)
+                // CIImage 的情况 - 默认使用 PNG（简化处理）
+                data = image.pngData()
             } else {
                 // 默认使用 PNG
                 data = image.pngData()

@@ -41,28 +41,28 @@ final class ImageCache: ImageCacheProtocol {
 
     // MARK: - ImageCacheProtocol 实现（代理到 CacheSystem）
 
-    func get(for key: String) -> UIImage? {
-        cacheSystem.image(for: key)
+    func get(for key: String) async -> UIImage? {
+        await cacheSystem.image(for: key)
     }
 
-    func set(_ image: UIImage, for key: String) {
-        cacheSystem.setImage(image, for: key)
+    func set(_ image: UIImage, for key: String) async {
+        await cacheSystem.setImage(image, for: key)
     }
 
-    func remove(for key: String) {
-        cacheSystem.removeImage(for: key)
+    func remove(for key: String) async {
+        await cacheSystem.removeImage(for: key)
     }
 
     func load(from url: URL) async -> UIImage? {
-        await cacheSystem.loadImage(from: url)
+        return await cacheSystem.loadImage(from: url)
     }
 
-    func clearMemoryCache() {
-        cacheSystem.clearMemory()
+    func clearMemoryCache() async {
+        await cacheSystem.clearMemory()
     }
 
-    func clearAll() {
-        cacheSystem.clearAll()
+    func clearAll() async {
+        await cacheSystem.clearAll()
     }
 }
 

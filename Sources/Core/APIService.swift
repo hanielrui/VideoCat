@@ -49,7 +49,7 @@ class JellyfinAPIService {
         ]
 
         guard let bodyData = try? JSONSerialization.data(withJSONObject: body) else {
-            throw NetworkError.invalidURL
+            throw NetworkError.invalidURL("Failed to serialize JSON body")
         }
 
         let endpoint = APIEndpoint(
