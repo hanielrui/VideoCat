@@ -116,7 +116,7 @@ class JellyfinHomeViewController: BaseViewController {
         let actions = [
             UIAlertAction(title: "Login", style: .default) { [weak self] _ in
                 self?.coordinator?.pop()
-            }),
+            },
             UIAlertAction(title: "Cancel", style: .cancel)
         ]
         coordinator?.presentAlert(title: "Not Logged In", message: "Please login to your Jellyfin server first.", actions: actions)

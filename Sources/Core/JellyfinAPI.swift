@@ -128,7 +128,10 @@ protocol JellyfinAPIClient {
     var isLoggedIn: Bool { get }
 
     /// 当前认证 Token
-    var token: String { get }
+    var token: String { get set }
+    
+    /// 服务器基础 URL
+    var baseURL: String { get set }
 
     /// 用户登录
     func login(username: String, password: String) async throws

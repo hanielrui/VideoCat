@@ -87,10 +87,7 @@ class LoginViewController: BaseViewController {
         view.endEditing(true)
     }
 
-    // MARK: - URL 标准化（复用 URLBuilder.normalize）
-    private func standardizeURL(_ url: String) -> String {
-        return URLBuilder.normalize(url)
-    }
+
 
     // MARK: - 输入验证
     private func validateInput() -> Bool {
@@ -100,26 +97,13 @@ class LoginViewController: BaseViewController {
             return false
         }
 
-        // 允许 localhost
+        // 允许 localhost 和 IP 地址，normalize 会处理格式
         if server == "localhost" || server.hasPrefix("localhost:") {
             return validateCredentials()
         }
-
-        // 验证服务器 URL 格式（域名）
-        let serverPattern = "^[a-zA-Z0-9][a-zA-Z0-9.-]*(\\.[a-zA-Z]{2,})(:[0-9]+)?$"
-        let serverRegex = try? NSRegularExpression(pattern: serverPattern, options: [])
-        let serverRange = NSRange(server.startIndex..., in: server)
-
-        if serverRegex?.firstMatch(in: server, options: [], range: serverRange) == nil {
-            // 允许 IP 地址
-            let ipPattern = "^((25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)(:[0-9]+)?$"
-            let ipRegex = try? NSRegularExpression(pattern: ipPattern, options: [])
-            if ipRegex?.firstMatch(in: server, options: [], range: serverRange) == nil {
-                showInputError("服务器地址格式无效")
-                return false
-            }
-        }
-
+        
+        // 简单的非空验证即可，normalize 会处理格式
+        // 删除复杂的正则验证
         return validateCredentials()
     }
 
@@ -141,12 +125,9 @@ class LoginViewController: BaseViewController {
 
     // MARK: - 输入错误提示
     private func showInputError(_ message: String) {
-        // 使用 ErrorHandling 统一处理错误
-        let displayInfo = ErrorHandling.handle(
-            LoginValidationError.invalidInput(message),
-            context: .init(source: "LoginViewController", operation: "validateInput")
-        )
-        showError(message, recoverySuggestion: nil, actions: [])
+        // 直接使用基类的 showError 方法
+        let error = LoginValidationError.invalidInput(message)
+        showError(error)
     }
 
     // MARK: - 登录操作
@@ -168,7 +149,7 @@ class LoginViewController: BaseViewController {
         }
 
         // 标准化 URL
-        let server = standardizeURL(serverText)
+        let server = URLBuilder.normalize(serverText)
         let username = usernameText.trimmingCharacters(in: .whitespacesAndNewlines)
         let password = passwordText
 

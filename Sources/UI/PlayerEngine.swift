@@ -35,17 +35,13 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
     private let seekDebounceInterval: TimeInterval = 0.3
 
     // Combine Publishers
-    private let stateSubject = CurrentValueSubject<PlayerState, Never>(.idle)
     private let progressSubject = PassthroughSubject<(Double, Double), Never>()
     private let bufferingSubject = CurrentValueSubject<Bool, Never>(false)
     private let errorSubject = PassthroughSubject<PlayerError, Never>()
 
     // 统一状态源（单一数据源）
+    // 重构后：统一使用 unifiedStateSubject 作为唯一数据源
     private let unifiedStateSubject = CurrentValueSubject<PlayerStateStruct, Never>(.idle)
-
-    var statePublisher: AnyPublisher<PlayerState, Never> {
-        stateSubject.eraseToAnyPublisher()
-    }
 
     var unifiedStatePublisher: AnyPublisher<PlayerStateStruct, Never> {
         unifiedStateSubject.eraseToAnyPublisher()
@@ -200,7 +196,6 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
     func play(url: URL) {
         cleanup()
 
-        stateSubject.send(.loading)
         updateUnifiedState(status: .loading, url: url)
 
         // 加载 asset（@MainActor 已保证主线程执行）
@@ -220,7 +215,6 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
                             userInfo: [NSLocalizedDescriptionKey: "Asset is not playable"]
                         )
                         self.errorSubject.send(.loadFailed(error))
-                        self.stateSubject.send(.error(.loadFailed(error)))
                         self.updateUnifiedState(status: .error, error: .loadFailed(error))
                         return
                     }
@@ -237,7 +231,6 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
             } catch {
                 await MainActor.run {
                     self.errorSubject.send(.loadFailed(error))
-                    self.stateSubject.send(.error(.loadFailed(error)))
                     self.updateUnifiedState(status: .error, error: .loadFailed(error))
                 }
             }
@@ -278,7 +271,7 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
 
             // 更新统一状态
             self.updateUnifiedState(
-                status: self.stateSubject.value == .buffering ? .buffering :
+                status: self.unifiedStateSubject.value.status == .buffering ? .buffering :
                        self.player.rate > 0 ? .playing : .paused,
                 currentTime: current,
                 duration: duration
@@ -299,13 +292,11 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
             guard let self = self else { return }
 
             if player.rate == 0 {
-                if self.stateSubject.value != .buffering {
-                    self.stateSubject.send(.paused)
+                if self.unifiedStateSubject.value.status != .buffering {
                     self.updateUnifiedState(status: .paused)
                 }
                 Logger.debug("Playback rate became 0")
             } else {
-                self.stateSubject.send(.playing)
                 self.updateUnifiedState(status: .playing)
             }
         }
@@ -322,7 +313,6 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
                 let error = item.error
                 Logger.error("Player status failed: \(error?.localizedDescription ?? "Unknown")")
                 self?.errorSubject.send(.loadFailed(error))
-                self?.stateSubject.send(.error(.loadFailed(error)))
                 self?.updateUnifiedState(status: .error, error: .loadFailed(error))
             case .unknown:
                 break
@@ -342,10 +332,8 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
             self.bufferingSubject.send(isBuffering)
 
             if isBuffering {
-                self.stateSubject.send(.buffering)
                 self.updateUnifiedState(status: .buffering)
             } else if self.player.rate > 0 {
-                self.stateSubject.send(.playing)
                 self.updateUnifiedState(status: .playing)
             }
 
@@ -361,7 +349,6 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
             object: item,
             queue: .main
         ) { [weak self] _ in
-            self?.stateSubject.send(.ended)
             self?.updateUnifiedState(status: .ended)
             Logger.info("Playback ended")
         }
@@ -377,14 +364,12 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
     // MARK: - 播放控制
     func pause() {
         player.pause()
-        stateSubject.send(.paused)
         updateUnifiedState(status: .paused)
         Logger.Player.pause()
     }
 
     func resume() {
         player.play()
-        stateSubject.send(.playing)
         updateUnifiedState(status: .playing)
         Logger.Player.play(url: "resume")
     }
@@ -393,7 +378,6 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
         player.pause()
         player.replaceCurrentItem(with: nil)
         cleanup()
-        stateSubject.send(.idle)
         updateUnifiedState(status: .idle, currentTime: 0, duration: 0)
         Logger.Player.stop()
     }

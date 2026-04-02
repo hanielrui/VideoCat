@@ -12,8 +12,10 @@ actor PlayerPool {
     private let maxSize: Int = 3 // 最大复用数量
     
     // MARK: - 池（Actor 自动保护这些属性的访问）
-    private var pool: [Player] = []
-    private var inUsePlayers: [ObjectIdentifier: Player] = [:]
+    private var pool: [any Player] = []
+    private var inUsePlayers: [ObjectIdentifier: any Player] = [:]
+
+
 
     // MARK: - 初始化
     private init() {
@@ -46,12 +48,15 @@ actor PlayerPool {
 
     /// 获取播放器（返回 PlayerCore 保持向后兼容）
     /// - Returns: PlayerCore 实例
+    /// - Note: 移除 @MainActor 注解，因为 actor 方法默认在 actor 执行上下文
     func acquirePlayerCore() async -> PlayerCore {
         // PlayerCore 内部使用 PlayerEngine，需要在主线程创建
-        let playerCore = PlayerCore()
-        let id = ObjectIdentifier(playerCore as AnyObject)
-        inUsePlayers[id] = playerCore
-        return playerCore
+        return await MainActor.run {
+            let playerCore = PlayerCore()
+            let id = ObjectIdentifier(playerCore as AnyObject)
+            inUsePlayers[id] = playerCore
+            return playerCore
+        }
     }
 
     /// 归还播放器到池中

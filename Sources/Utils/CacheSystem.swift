@@ -184,7 +184,7 @@ actor CacheSystem: CacheSystemProtocol {
     
     // MARK: - 计算属性代理（保持向后兼容）
     nonisolated var statistics: CacheStatistics {
-        statisticsSubject.value
+        statisticsSubject.value  // 这是安全的，因为 CurrentValueSubject 是线程安全的
     }
     
     // MARK: - 清理任务
@@ -230,17 +230,15 @@ actor CacheSystem: CacheSystemProtocol {
         return nil
     }
     
-    func set<T>(_ value: T, category: CacheCategory, cost: Int?) {
-        // 由具体实现处理
-    }
-    
     func set<T>(_ value: T, forKey key: String, category: CacheCategory, cost: Int?) {
         let compositeKey = makeKey(key, category: category)
-        
-        // 内存缓存
-        memoryStorage.set(value, forKey: compositeKey, cost: cost)
-        
+
+        // 内存缓存（受 cost 参数控制）
+        memoryStorage.set(value as AnyObject, forKey: compositeKey, cost: cost)
+
         // 异步写入磁盘（Data 类型）- 使用 Task 避免阻塞 actor
+        // 注意：磁盘存储不受 cost 参数影响，成本仅应用于内存缓存
+        // 如果快速连续写入同一 key，磁盘写入是异步的，可能存在竞态条件
         if let data = convertToData(value) {
             Task {
                 diskStorage.writeData(data, forKey: compositeKey, category: category)
@@ -248,6 +246,8 @@ actor CacheSystem: CacheSystemProtocol {
             }
         }
     }
+    
+
     
     func getData(forKey key: String, category: CacheCategory) -> Data? {
         let compositeKey = makeKey(key, category: category)

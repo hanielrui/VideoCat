@@ -108,7 +108,11 @@ class PlayerViewController: UIViewController {
     // MARK: - 绑定 ViewModel
     private func setupBindings() {
         // 设置播放器层
-        viewModel.attachPlayerLayer(playerView.playerLayer!)
+        if let playerLayer = playerView.playerLayer {
+            viewModel.attachPlayerLayer(playerLayer)
+        } else {
+            Logger.error("Failed to get player layer")
+        }
 
         // 绑定播放/暂停按钮
         controls.onPlayPause = { [weak self] in

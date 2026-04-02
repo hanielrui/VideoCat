@@ -35,16 +35,19 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         )
 
         // 配置 Token 刷新拦截器
+        // 为了避免潜在的循环引用，使用本地变量捕获 jellyfinAPI
+        let jellyfinAPI = container.jellyfinAPI
+        let networkManager = container.networkManager
+        
         container.configureTokenRefresh(
-            refreshToken: { [weak container] in
+            refreshToken: { [weak jellyfinAPI] in
                 // 通过协议调用 JellyfinAPI 的 refreshToken 方法
-                guard let container = container else { return false }
-                return await container.jellyfinAPI.refreshToken()
+                guard let jellyfinAPI = jellyfinAPI else { return false }
+                return await jellyfinAPI.refreshToken()
             },
-            updateToken: { [weak container] newToken in
+            updateToken: { [weak networkManager] newToken in
                 // 更新 NetworkService 的 token（通过协议属性）
-                guard let container = container else { return }
-                container.networkManager.token = newToken
+                networkManager?.token = newToken
                 Logger.info("Token updated in NetworkManager")
             }
         )

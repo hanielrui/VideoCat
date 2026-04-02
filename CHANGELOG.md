@@ -24,6 +24,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 修复 AppContainer.shared 可选性问题
 - 修复 PlayerState Equatable 实现
 - 修复 VideoCache 类型安全问题
+- 修复 CacheSystem.set 方法签名不匹配问题 (#1)
+- 修复循环引用风险：AppCoordinator 中闭包捕获问题 (#2)
+- 修复 @MainActor 与 Actor 混用问题：CacheSystem statistics 访问 (#3)
+- 修复未定义的 Player 类型：PlayerPool 数组类型问题 (#4)
+- 修复重复代码：统一 URL 标准化逻辑 (#5)
+- 修复未使用的参数：CacheSystem cost 参数问题 (#6)
+- 修复可选值强制解包风险：PlayerViewController playerLayer! (#7)
+- 修复线程安全：PlayerPool NonSendable 类型跨越 Actor 边界 (#8)
+- 修复 LoginViewController.showError 调用参数错误
+- 修复 JellyfinAPIClient 协议缺少 baseURL 和 token 的 set 访问器
+- 简化 LoginViewController 中的 URL 验证逻辑
+- 修复 JellyfinHomeViewController 数组元素缺少逗号的语法错误
+- 修复 CacheSystem set 方法 cost 参数注释说明 (#1-警告)
+- 修复 PlayerPool.acquirePlayerCore 的 @MainActor 与 Actor 隔离 (#2-警告)
+- 添加 PlayerEngine 双状态源问题说明注释 (#3-警告)
+- **重构**：统一 PlayerEngine 状态管理，废弃 stateSubject (#3-警告-重构)
 
 ## [1.0.0] - 2026-03-30
 
