@@ -143,16 +143,13 @@ final class AppCoordinator: AppCoordinatorProtocol {
     }
 
     /// 播放器使用完毕后归还到池中
-    func releasePlayer(_ player: Player) {
+    func releasePlayer(_ player: PlayerCoreProtocol) {
         Task { [weak self] in
-            await self?.container.playerPool.releasePlayer(player)
-        }
-    }
-
-    /// 播放器使用完毕后归还到池中（保持向后兼容）
-    func releasePlayer(_ player: PlayerCore) {
-        Task { [weak self] in
-            await self?.container.playerPool.releasePlayer(player)
+            if let playerEngine = player as? Player {
+                await self?.container.playerPool.releasePlayer(playerEngine)
+            } else {
+                Logger.warning("Player is not a Player type, cannot release to pool")
+            }
         }
     }
 }

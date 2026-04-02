@@ -117,7 +117,7 @@ extension UIImageView {
             await MainActor.run {
                 self?.image = loadedImage
             }
-        }.cancellableTask
+        }
     }
 
     /// 取消加载

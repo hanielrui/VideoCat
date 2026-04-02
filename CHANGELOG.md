@@ -24,6 +24,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 修复 AppContainer.shared 可选性问题
 - 修复 PlayerState Equatable 实现
 - 修复 VideoCache 类型安全问题
+- 修复 GitHub Actions 构建：添加 XcodeGen 生成步骤
+
+### Technical
+- XcodeGen 集成：自动化生成 Xcode 项目文件
+- GitHub Actions CI/CD：支持 XcodeGen 工作流程
+- 修复 project.yml 依赖关系：删除主目标对测试目标的错误依赖
 - 修复 CacheSystem.set 方法签名不匹配问题 (#1)
 - 修复循环引用风险：AppCoordinator 中闭包捕获问题 (#2)
 - 修复 @MainActor 与 Actor 混用问题：CacheSystem statistics 访问 (#3)

@@ -51,11 +51,12 @@ class BaseViewController: UIViewController {
     // MARK: - 用户友好的错误提示
     func showError(_ error: Error, retryAction: (() -> Void)? = nil) {
         // 使用 ErrorHandling 辅助类处理错误
-        var message = ErrorHandling.logAndHandle(error)
+        let errorInfo = ErrorHandling.logAndHandle(error)
+        var message = errorInfo.message
 
         // 添加恢复建议
-        if let jellyfinError = error.asJellyfinError, let suggestion = jellyfinError.recoverySuggestion {
-            message += "\n\nSuggestion:\n\(suggestion)"
+        if let recoverySuggestion = errorInfo.recoverySuggestion {
+            message += "\n\nSuggestion:\n\(recoverySuggestion)"
         }
 
         // 判断是否为需要返回的错误类型
