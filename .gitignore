@@ -1,0 +1,49 @@
+# Xcode
+.DS_Store
+build/
+DerivedData/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace
+*.xcworkspace/project.xcworkspace
+
+# CocoaPods
+Pods/
+Podfile.lock
+
+# Swift Package Manager
+.swiftpm/
+Package.resolved
+
+# Carthage
+Carthage/Build/
+Carthage/Checkouts/
+
+# Archives
+*.xcarchive
+*.ipa
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+Thumbs.db
+*.log
+
+# Build outputs
+build/
+Release-iphoneos/
+Release-iphonesimulator/
+
+# Secrets
+*.env
+secrets/
+
+# Test coverage
+*.gcov
+*.gcda
+*.gcno
+coverage/

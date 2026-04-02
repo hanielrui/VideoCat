@@ -1,0 +1,15 @@
+已完成配置：
+
+Info.plist - 添加了 CFBundleDisplayName 键
+zh-Hans.lproj/InfoPlist.strings - 中文名 "影视猫"
+en.lproj/InfoPlist.strings - 英文名 "VideoCat"
+由于 Xcode 项目文件需要手动添加本地化文件夹，请在 Xcode 中操作：
+
+右键 VideoPlayer 文件夹 → Add Files to "VideoPlayer"
+选择 zh-Hans.lproj 和 en.lproj 文件夹
+勾选 Copy items if needed 和 Create folder references
+点击 Add
+添加后：
+
+系统语言为中文时 → 显示 影视猫
+系统语言为英文时 → 显示 VideoCat

@@ -1,0 +1,78 @@
+name: VideoPlayer
+options:
+  bundleIdPrefix: com.example
+  deploymentTarget:
+    iOS: "15.0"
+  xcodeVersion: "15.0"
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    GENERATE_INFOPLIST_FILE: YES
+
+targets:
+  VideoPlayer:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+        excludes:
+          - "**/.DS_Store"
+          - "**/VideoPlayerTests/**"
+    settings:
+      base:
+        INFOPLIST_FILE: Sources/Info.plist
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.VideoPlayer
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        ENABLE_PREVIEWS: YES
+        LD_RUNPATH_SEARCH_PATHS: "$(inherited) @executable_path/Frameworks"
+        SWIFT_EMIT_LOC_STRINGS: YES
+    info:
+      path: Sources/Info.plist
+      properties:
+        CFBundleDisplayName: VideoPlayer
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        NSLocalNetworkUsageDescription: "This app requires access to your local network to connect to Jellyfin servers."
+        UIBackgroundModes:
+          - audio
+        ITSAppUsesNonExemptEncryption: false
+    dependencies:
+      - target: VideoPlayerTests
+        embed: true
+        codeSign: true
+        copy:
+          destination: executables
+
+  VideoPlayerTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Tests/UnitTests
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.example.VideoPlayerTests
+        INFOPLIST_FILE: Tests/UnitTests/Info.plist
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/VideoPlayer.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/VideoPlayer"
+        BUNDLE_LOADER: "$(TEST_HOST)"
+    info:
+      path: Tests/UnitTests/Info.plist
+      properties:
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"

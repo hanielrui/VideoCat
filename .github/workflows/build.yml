@@ -1,59 +1,104 @@
-name: FINAL FIX — Frameworks Included
+name: Build iOS
+
 on:
   push:
+    branches: [main]
+  pull_request:
     branches: [main]
   workflow_dispatch:
 
 env:
-  PROJECT: VideoPlayer
-  SCHEME: VideoPlayer
+  PROJECT_NAME: VideoPlayer
+  SCHEME_NAME: VideoPlayer
+  CODE_SIGN_IDENTITY: ""
+  CODE_SIGNING_REQUIRED: "NO"
+  CODE_SIGNING_ALLOWED: "NO"
 
 jobs:
   build:
-    runs-on: macos-14
+    name: Build iOS App
+    runs-on: macos-latest
+    
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Select Xcode 15.4
-        run: sudo xcode-select -s /Applications/Xcode_15.4.app/Contents/Developer
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 
-      - name: Build App
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Show Swift version
+        run: swift -version
+
+      - name: Build iOS App
         run: |
           xcodebuild build \
-            -project "$PROJECT.xcodeproj" \
-            -scheme "$SCHEME" \
-            -configuration Release \
-            -sdk iphoneos \
-            -arch arm64 \
-            BUILD_DIR="./build" \
-            CODE_SIGNING_ALLOWED=NO
+            -project ${{ env.PROJECT_NAME }}.xcodeproj \
+            -scheme ${{ env.SCHEME_NAME }} \
+            -configuration Debug \
+            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            CODE_SIGNING_ALLOWED=${{ env.CODE_SIGNING_ALLOWED }} \
+            CODE_SIGNING_REQUIRED=${{ env.CODE_SIGNING_REQUIRED }} \
+            CODE_SIGN_IDENTITY="${{ env.CODE_SIGN_IDENTITY }}"
 
-      - name: Add Swift Frameworks & Package IPA
-        run: |
-          APP="./build/Release-iphoneos/$PROJECT.app"
-          echo "App path: $APP"
-
-          # 关键步骤：强制复制 Swift 标准库到 Frameworks 目录
-          mkdir -p "$APP/Frameworks"
-          /Applications/Xcode_15.4.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/bin/swift-stdlib-tool \
-            --copy \
-            --scan-executable "$APP/$PROJECT" \
-            --platform iphoneos \
-            --destination "$APP/Frameworks"
-
-          # 给可执行文件加执行权限
-          chmod +x "$APP/$PROJECT"
-
-          # 打包 IPA
-          mkdir -p Payload
-          cp -R "$APP" Payload/
-          zip -r "$PROJECT-Troll.ipa" Payload
-
-          # 检查最终大小
-          ls -lh *.ipa
-
-      - name: Upload
+      - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: $PROJECT-Troll
-          path: "*.ipa"
+          name: build-output
+          path: |
+            build/Build/Products/Debug-iphonesimulator/*.app
+          retention-days: 7
+
+  archive:
+    name: Create IPA
+    runs-on: macos-latest
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+      - name: Create IPA
+        run: |
+          # Create build directory
+          mkdir -p ./build
+
+          # Archive without signing for generic iOS device
+          xcodebuild archive \
+            -project ${{ env.PROJECT_NAME }}.xcodeproj \
+            -scheme ${{ env.SCHEME_NAME }} \
+            -configuration Release \
+            -destination generic/platform=iOS \
+            -archivePath ./build/VideoPlayer.xcarchive \
+            CODE_SIGNING_ALLOWED=NO
+
+          # Package .app into IPA manually using zip
+          APP_PATH="./build/VideoPlayer.xcarchive/Products/Applications/VideoPlayer.app"
+          IPA_PATH="./build/VideoPlayer.ipa"
+          
+          # Create Payload directory
+          mkdir -p ./build/Payload
+          cp -R "$APP_PATH" ./build/Payload/
+          
+          # Create IPA using zip
+          cd ./build
+          zip -qr "$IPA_PATH" Payload
+          cd ..
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: VideoPlayer-ipa
+          path: build/VideoPlayer.ipa
+
+      - name: Upload xcarchive
+        uses: actions/upload-artifact@v4
+        with:
+          name: VideoPlayer-xcarchive
+          path: build/VideoPlayer.xcarchive
