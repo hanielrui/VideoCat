@@ -209,9 +209,7 @@ actor PlayerPreloader {
     }
 
     /// 获取预加载的 Asset
-    nonisolated func getPreloadedAsset(for url: URL) -> AVAsset? {
-        // 注意：需要在 Actor 外部调用时使用同步方法
-        // 这里提供一个简化实现
+    func getPreloadedAsset(for url: URL) -> AVAsset? {
         let key = url.absoluteString
         return preloadTasks[key]
     }

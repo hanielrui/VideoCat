@@ -486,11 +486,11 @@ final class MemoryStorage {
         cache.countLimit = countLimit
         cache.totalCostLimit = totalCostLimit
     }
-    
-    func object<T>(forKey key: String) -> T? {
+
+    func object<T: AnyObject>(forKey key: String) -> T? {
         cache.object(forKey: key as NSString) as? T
     }
-    
+
     func data(forKey key: String) -> Data? {
         dataCache.object(forKey: key as NSString) as Data?
     }

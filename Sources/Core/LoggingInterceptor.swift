@@ -4,7 +4,7 @@ import Foundation
 
 /// 日志拦截器
 /// 统一记录请求和响应日志
-final class LoggingInterceptor: NetworkInterceptor {
+actor LoggingInterceptor: NetworkInterceptor {
 
     // MARK: - 日志级别
 
@@ -121,19 +121,16 @@ final class LoggingInterceptor: NetworkInterceptor {
 
 /// 请求计时拦截器
 /// 记录请求耗时
-final class TimingInterceptor: NetworkInterceptor {
+actor TimingInterceptor: NetworkInterceptor {
 
     /// 请求开始时间存储
     private var startTimes: [String: Date] = [:]
-    private let lock = NSLock()
 
     func adapt(_ request: URLRequest) async -> URLRequest {
         guard let url = request.url else { return request }
 
         let key = url.absoluteString
-        lock.lock()
         startTimes[key] = Date()
-        lock.unlock()
 
         return request
     }
@@ -146,9 +143,7 @@ final class TimingInterceptor: NetworkInterceptor {
     func recordCompletion(for url: URL) {
         let key = url.absoluteString
 
-        lock.lock()
         let startTime = startTimes.removeValue(forKey: key)
-        lock.unlock()
 
         if let start = startTime {
             let duration = Date().timeIntervalSince(start)

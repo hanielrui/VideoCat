@@ -2,7 +2,8 @@ import UIKit
 import AVFoundation
 import MediaPlayer
 
-/// 手势管理器 - 手动确保 UI 操作在主线程执行
+/// 手势管理器
+@MainActor
 class GestureManager: NSObject, GestureManagerProtocol {
 
     private weak var view: UIView?
@@ -291,9 +292,7 @@ class GestureManager: NSObject, GestureManagerProtocol {
     }
 
     deinit {
-        Task { @MainActor in
-            cleanup()
-        }
+        cleanup()
         Logger.debug("GestureManager deinitialized")
     }
 }
