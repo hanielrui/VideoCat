@@ -149,7 +149,7 @@ final class AppCoordinator: AppCoordinatorProtocol {
     func releasePlayer(_ player: PlayerCoreProtocol) {
         Task { [weak self] in
             // PlayerCoreProtocol 继承自 Player，可以直接传递
-            await self?.container.playerPool.releasePlayer(player as Player)
+            await self?.container.playerPool.releasePlayer(player)
         }
     }
 }
