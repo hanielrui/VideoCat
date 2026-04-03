@@ -400,9 +400,9 @@ class NetworkManager: NetworkService {
         let (data, httpResponse) = try await sendWithRetry(request: request, config: config)
 
         // 记录完成时间和响应日志
-        timingInterceptor?.recordCompletion(for: request.url!)
+        await timingInterceptor?.recordCompletion(for: request.url!)
         if let response = httpResponse {
-            loggingInterceptor?.logResponse(statusCode: response.statusCode, data: data, path: path)
+            await loggingInterceptor?.logResponse(statusCode: response.statusCode, data: data, path: path)
         }
 
         return data
@@ -438,7 +438,7 @@ class NetworkManager: NetworkService {
                     let error = NetworkError.from(httpResponse: httpResponse, data: data)
 
                     // 记录错误日志
-                    loggingInterceptor?.logError(error, path: currentRequest.url?.path ?? "")
+                    await loggingInterceptor?.logError(error, path: currentRequest.url?.path ?? "")
 
                     // 检查拦截器是否应该重试
                     if let chain = interceptorChain {

@@ -322,6 +322,7 @@ protocol PlayerCoreProtocol: Player {
 // MARK: - GestureManager 协议
 
 /// 手势管理器协议
+@MainActor
 protocol GestureManagerProtocol: AnyObject {
     init(view: UIView, player: AVPlayer)
 }

@@ -143,6 +143,7 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
     }
 
     // MARK: - 音频中断处理
+    @MainActor
     @objc private func handleInterruption(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
               let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
@@ -167,6 +168,7 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
     }
 
     // MARK: - 音频路由变化处理
+    @MainActor
     @objc private func handleRouteChange(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
               let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
@@ -264,7 +266,7 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
         timeObserver = player.addPeriodicTimeObserver(
             forInterval: interval,
             queue: .main
-        ) { [weak self] time in
+        ) { @MainActor [weak self] time in
             guard let self = self,
                   let duration = self.player.currentItem?.duration.seconds,
                   duration.isFinite && duration > 0 else { return }
@@ -291,7 +293,7 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
 
     private func setupRateObserver() {
         rateObserver?.invalidate()
-        rateObserver = player.observe(\.rate, options: [.new]) { [weak self] player, _ in
+        rateObserver = player.observe(\.rate, options: [.new]) { @MainActor [weak self] player, _ in
             guard let self = self else { return }
 
             if player.rate == 0 {
@@ -308,7 +310,7 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
     private func setupStatusObserver(item: AVPlayerItem) {
         statusObserver?.invalidate()
 
-        statusObserver = item.observe(\.status, options: [.new]) { [weak self] item, _ in
+        statusObserver = item.observe(\.status, options: [.new]) { @MainActor [weak self] item, _ in
             switch item.status {
             case .readyToPlay:
                 Logger.debug("Player ready to play")
@@ -328,7 +330,7 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
     private func setupBufferingObserver(item: AVPlayerItem) {
         bufferingObserver?.invalidate()
 
-        bufferingObserver = item.observe(\.isPlaybackLikelyToKeepUp, options: [.new]) { [weak self] item, _ in
+        bufferingObserver = item.observe(\.isPlaybackLikelyToKeepUp, options: [.new]) { @MainActor [weak self] item, _ in
             guard let self = self else { return }
 
             let isBuffering = !item.isPlaybackLikelyToKeepUp
@@ -351,7 +353,7 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
             forName: .AVPlayerItemDidPlayToEndTime,
             object: item,
             queue: .main
-        ) { [weak self] _ in
+        ) { @MainActor [weak self] _ in
             self?.updateUnifiedState(status: .ended)
             Logger.info("Playback ended")
         }
