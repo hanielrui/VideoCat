@@ -277,25 +277,6 @@ actor CacheSystem: CacheSystemProtocol {
         return try? JSONDecoder().decode(type, from: data)
     }
 
-    // MARK: - 通用类型转换方法，不依赖泛型约束
-        let compositeKey = makeKey(key, category: category)
-
-        // 内存缓存（受 cost 参数控制）
-        memoryStorage.set(value as AnyObject, forKey: compositeKey, cost: cost)
-
-        // 异步写入磁盘（Data 类型）- 使用 Task 避免阻塞 actor
-        // 注意：磁盘存储不受 cost 参数影响，成本仅应用于内存缓存
-        // 如果快速连续写入同一 key，磁盘写入是异步的，可能存在竞态条件
-        if let data = convertToData(value) {
-            Task {
-                diskStorage.writeData(data, forKey: compositeKey, category: category)
-                await scheduleCleanupIfNeeded()
-            }
-        }
-    }
-
-
-    
     func getData(forKey key: String, category: CacheCategory) async -> Data? {
         let compositeKey = makeKey(key, category: category)
         
@@ -318,8 +299,8 @@ actor CacheSystem: CacheSystemProtocol {
         recordMiss()
         return nil
     }
-    
-    func setData(_ data: Data, forKey key: String, category: CacheCategory) {
+
+    func setData(_ data: Data, forKey key: String, category: CacheCategory) async {
         let compositeKey = makeKey(key, category: category)
         
         // 内存缓存
@@ -332,14 +313,14 @@ actor CacheSystem: CacheSystemProtocol {
         }
     }
     
-    func remove(forKey key: String, category: CacheCategory) {
+    func remove(forKey key: String, category: CacheCategory) async {
         let compositeKey = makeKey(key, category: category)
         memoryStorage.remove(forKey: compositeKey)
         diskStorage.remove(forKey: compositeKey, category: category)
     }
     
     // MARK: - 生命周期
-    func clearMemory() {
+    func clearMemory() async {
         memoryStorage.clear()
         _statistics.memoryItemCount = 0
         _statistics.memorySize = 0
@@ -446,7 +427,7 @@ actor CacheSystem: CacheSystemProtocol {
         }
     }
     
-    private func performCleanupIfNeeded() {
+    private func performCleanupIfNeeded() async {
         let currentSize = diskStorage.totalSize()
         let limit = config.diskSizeLimit
         
@@ -473,26 +454,6 @@ actor CacheSystem: CacheSystemProtocol {
     }
 
     // MARK: - 数据转换
-
-    private func convertToData<T: Encodable>(_ value: T) -> Data? {
-        if let data = value as? Data {
-            return data
-        }
-        if let string = value as? String {
-            return string.data(using: .utf8)
-        }
-        return try? JSONEncoder().encode(value)
-    }
-
-    private func convertFromData<T: Decodable>(_ data: Data, type: T.Type) -> T? {
-        if type == Data.self {
-            return data as? T
-        }
-        if type == String.self {
-            return String(data: data, encoding: .utf8) as? T
-        }
-        return try? JSONDecoder().decode(type, from: data)
-    }
 
     // 通用类型转换方法，不依赖泛型约束
     private func convertAnyToData(_ value: Any) -> Data? {
@@ -911,7 +872,7 @@ extension CacheSystem {
 
             // 读取临时文件数据并写入缓存
             let data = try Data(contentsOf: tempURL)
-            setData(data, forKey: key, category: .video)
+            await setData(data, forKey: key, category: .video)
 
             Logger.info("Cached to disk: \(sourceURL.lastPathComponent), size: \(data.count)")
             return true
