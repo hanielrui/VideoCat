@@ -863,8 +863,8 @@ extension CacheSystem {
     }
 
     /// 获取当前视频缓存大小
-    func videoCacheSize() -> Int64 {
-        diskSize(for: .video)
+    func videoCacheSize() async -> Int64 {
+        await diskSize(for: .video)
     }
 
     // MARK: - 私有方法

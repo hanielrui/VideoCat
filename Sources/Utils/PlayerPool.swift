@@ -39,7 +39,9 @@ actor PlayerPool {
         }
 
         // 创建新播放器
-        let player = PlayerEngine()
+        let player = await MainActor.run {
+            PlayerEngine()
+        }
         let id = ObjectIdentifier(player as AnyObject)
         inUsePlayers[id] = player
         Logger.debug("Created new player, total in use: \(inUsePlayers.count)")
@@ -51,12 +53,12 @@ actor PlayerPool {
     /// - Note: 移除 @MainActor 注解，因为 actor 方法默认在 actor 执行上下文
     func acquirePlayerCore() async -> PlayerCore {
         // PlayerCore 内部使用 PlayerEngine，需要在主线程创建
-        return await MainActor.run {
-            let playerCore = PlayerCore()
-            let id = ObjectIdentifier(playerCore as AnyObject)
-            inUsePlayers[id] = playerCore
-            return playerCore
+        let playerCore = await MainActor.run {
+            PlayerCore()
         }
+        let id = ObjectIdentifier(playerCore as AnyObject)
+        inUsePlayers[id] = playerCore
+        return playerCore
     }
 
     /// 归还播放器到池中
@@ -68,7 +70,7 @@ actor PlayerPool {
         guard inUsePlayers[id] != nil else { return }
 
         // 重置播放器状态
-        reset(player)
+        await reset(player)
 
         // 如果池未满，加入可用池
         if pool.count < maxSize {
@@ -77,7 +79,7 @@ actor PlayerPool {
             Logger.debug("Player returned to pool, available: \(pool.count)")
         } else {
             // 池已满，彻底释放播放器
-            cleanupPlayer(player)
+            await cleanupPlayer(player)
             inUsePlayers.removeValue(forKey: id)
             Logger.debug("Player released (pool full)")
         }
@@ -92,15 +94,19 @@ actor PlayerPool {
     // MARK: - 私有方法
 
     /// 重置播放器状态
-    private func reset(_ player: Player) {
-        player.stop()
-        player.cleanup()
+    private func reset(_ player: Player) async {
+        await MainActor.run {
+            player.stop()
+            player.cleanup()
+        }
     }
 
     /// 彻底清理播放器资源
-    private func cleanupPlayer(_ player: Player) {
-        player.stop()
-        player.cleanup()
+    private func cleanupPlayer(_ player: Player) async {
+        await MainActor.run {
+            player.stop()
+            player.cleanup()
+        }
     }
 
     /// 预加载播放器

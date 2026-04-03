@@ -452,8 +452,8 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
 
     // MARK: - 销毁
     deinit {
-        cleanup()
-        detachPlayerLayer()
+        // deinit 中不能直接调用 @MainActor 方法，只能做最小清理
+        // 完整的清理工作应该在显式调用 cleanup() 时完成
         NotificationCenter.default.removeObserver(self)
         Logger.debug("PlayerEngine deinitialized")
     }

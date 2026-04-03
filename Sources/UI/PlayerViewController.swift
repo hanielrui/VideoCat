@@ -154,8 +154,10 @@ class PlayerViewController: UIViewController {
                     self?.controls.update(current: 0, total: self?.viewModel.duration ?? 0)
                 case .playing, .paused, .buffering:
                     self?.hideLoading()
-                case .error(let error):
-                    self?.showError(error.localizedDescription)
+                case .error:
+                    if let error = self?.viewModel.error {
+                        self?.showError(error.localizedDescription)
+                    }
                 default:
                     break
                 }
@@ -300,13 +302,13 @@ class PlayerViewController: UIViewController {
     private func loadMedia() {
         guard urlValidator.validate(url) else {
             showError("Invalid playback URL. Please check the video source.")
-            Logger.Player.playbackError(NetworkError.invalidURL)
+            Logger.Player.playbackError(NetworkError.invalidURL("Invalid playback URL"))
             return
         }
 
         guard let mediaURL = URL(string: url) else {
             showError("Failed to parse URL.")
-            Logger.Player.playbackError(NetworkError.invalidURL)
+            Logger.Player.playbackError(NetworkError.invalidURL("Failed to parse URL"))
             return
         }
 
@@ -364,11 +366,13 @@ class PlayerViewController: UIViewController {
         stopPlayback()
         cancellables.removeAll()
         NotificationCenter.default.removeObserver(self)
-        
+
         // 归还播放器到池中
         if let player = player {
             Task { [weak coordinator] in
-                await coordinator?.releasePlayer(player)
+                if let playerCore = player as? PlayerCoreProtocol {
+                    await coordinator?.releasePlayer(playerCore)
+                }
             }
         }
     }

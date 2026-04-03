@@ -62,7 +62,7 @@ final class CacheManager: CacheService {
 
     // MARK: - 初始化
     private init() {
-        syncConfigToSystem()
+        Self.syncConfigToSystem()
     }
 
     // MARK: - 配置同步

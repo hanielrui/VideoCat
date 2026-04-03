@@ -39,7 +39,7 @@ class URLBuilder {
 
         guard let url = components?.url else {
             Logger.error("Failed to build URL: \(baseURL + normalizedPath)")
-            throw NetworkError.invalidURL
+            throw NetworkError.invalidURL("Failed to build URL")
         }
 
         return url

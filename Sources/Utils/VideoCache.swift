@@ -18,13 +18,13 @@ final class VideoCache {
     // MARK: - 公共接口（代理到 CacheSystem 扩展）
 
     /// 获取缓存的 Asset（内存缓存优先）
-    func getCachedAsset(for url: URL) -> AVURLAsset? {
-        cacheSystem.cachedAsset(for: url)
+    func getCachedAsset(for url: URL) async -> AVURLAsset? {
+        await cacheSystem.cachedAsset(for: url)
     }
 
     /// 缓存 Asset 到内存
-    func cacheToMemory(_ asset: AVAsset, for url: URL) {
-        cacheSystem.cacheAsset(asset, for: url)
+    func cacheToMemory(_ asset: AVAsset, for url: URL) async {
+        await cacheSystem.cacheAsset(asset, for: url)
     }
 
     /// 缓存视频到磁盘（Swift Concurrency）
@@ -43,14 +43,14 @@ final class VideoCache {
     }
 
     /// 清除所有缓存
-    func clearCache() {
-        cacheSystem.clearVideoMemoryCache()
-        cacheSystem.clearAll()
+    func clearCache() async {
+        await cacheSystem.clearVideoMemoryCache()
+        await cacheSystem.clearAll()
         Logger.info("Video cache cleared")
     }
 
     /// 获取当前缓存大小
-    func getCurrentCacheSize() -> Int64 {
-        cacheSystem.videoCacheSize()
+    func getCurrentCacheSize() async -> Int64 {
+        await cacheSystem.videoCacheSize()
     }
 }
