@@ -213,8 +213,8 @@ actor CacheSystem: CacheSystemProtocol {
         let compositeKey = makeKey(key, category: category)
 
         // 1. 内存缓存优先
-        let obj: T? = memoryStorage.object(forKey: compositeKey)
-        if let value = obj {
+        let obj = memoryStorage.object(forKey: compositeKey)
+        if let value = obj as? T {
             recordHit()
             updateAccessTime(compositeKey, category: category)
             return value
@@ -223,7 +223,7 @@ actor CacheSystem: CacheSystemProtocol {
         // 2. 磁盘缓存
         if let data = diskStorage.readData(forKey: compositeKey, category: category) {
             // 回填内存 - 使用类型检查来处理不同类型
-            if let value = convertFromAny(data, targetType: T.self) {
+            if let value = convertFromData(data, type: T.self) {
                 memoryStorage.set(value as AnyObject, forKey: compositeKey, cost: data.count)
                 recordHit()
                 updateAccessTime(compositeKey, category: category)
@@ -244,7 +244,7 @@ actor CacheSystem: CacheSystemProtocol {
         // 异步写入磁盘（Data 类型）- 使用 Task 避免阻塞 actor
         // 注意：磁盘存储不受 cost 参数影响，成本仅应用于内存缓存
         // 如果快速连续写入同一 key，磁盘写入是异步的，可能存在竞态条件
-        if let data = convertAnyToData(value) {
+        if let data = convertToData(value) {
             Task {
                 diskStorage.writeData(data, forKey: compositeKey, category: category)
                 await scheduleCleanupIfNeeded()
@@ -487,8 +487,8 @@ final class MemoryStorage {
         cache.totalCostLimit = totalCostLimit
     }
 
-    func object<T: AnyObject>(forKey key: String) -> T? {
-        cache.object(forKey: key as NSString) as? T
+    func object(forKey key: String) -> Any? {
+        cache.object(forKey: key as NSString)
     }
 
     func data(forKey key: String) -> Data? {
