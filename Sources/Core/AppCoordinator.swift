@@ -148,10 +148,8 @@ final class AppCoordinator: AppCoordinatorProtocol {
     /// 播放器使用完毕后归还到池中
     func releasePlayer(_ player: PlayerCoreProtocol) {
         Task { [weak self] in
-            // 检查是否是 Player 类型，如果是则归还到池中
-            if let playerEngine = player as? Player {
-                await self?.container.playerPool.releasePlayer(playerEngine)
-            }
+            // PlayerCoreProtocol 继承自 Player，可以直接传递
+            await self?.container.playerPool.releasePlayer(player as Player)
         }
     }
 }
