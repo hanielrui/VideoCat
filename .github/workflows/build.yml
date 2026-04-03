@@ -46,25 +46,34 @@ jobs:
             -project ${{ env.PROJECT_NAME }}.xcodeproj \
             -scheme ${{ env.SCHEME_NAME }} \
             -configuration Debug \
-            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=${{ env.CODE_SIGNING_ALLOWED }} \
             CODE_SIGNING_REQUIRED=${{ env.CODE_SIGNING_REQUIRED }} \
             CODE_SIGN_IDENTITY="${{ env.CODE_SIGN_IDENTITY }}"
+
+      - name: Verify build output
+        run: |
+          APP_PATH=$(find /Users/runner/Library/Developer/Xcode/DerivedData -name "*.app" -type d | head -1)
+          if [ -z "$APP_PATH" ]; then
+            echo "::error::Build output not found!"
+            exit 1
+          fi
+          echo "Build successful: $APP_PATH"
 
       - name: Upload Build Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: build-output
           path: |
-            build/Build/Products/Debug-iphonesimulator/*.app
+            /Users/runner/Library/Developer/Xcode/DerivedData/VideoPlayer-*/Build/Products/Debug-iphonesimulator/*.app
           retention-days: 7
+          if-no-files-found: error
 
   archive:
-    name: Create IPA
+    name: Create Simulator IPA
     runs-on: macos-latest
-    needs: build
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -80,41 +89,41 @@ jobs:
       - name: Generate Xcode project with XcodeGen
         run: xcodegen generate --spec project.yml
 
-      - name: Create IPA
+      - name: Build for Simulator
         run: |
-          # Create build directory
-          mkdir -p ./build
-
-          # Archive without signing for generic iOS device
-          xcodebuild archive \
+          xcodebuild build \
             -project ${{ env.PROJECT_NAME }}.xcodeproj \
             -scheme ${{ env.SCHEME_NAME }} \
             -configuration Release \
-            -destination generic/platform=iOS \
-            -archivePath ./build/VideoPlayer.xcarchive \
-            CODE_SIGNING_ALLOWED=NO
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY=""
 
-          # Package .app into IPA manually using zip
-          APP_PATH="./build/VideoPlayer.xcarchive/Products/Applications/VideoPlayer.app"
-          IPA_PATH="./build/VideoPlayer.ipa"
+      - name: Create IPA
+        run: |
+          # Find the built .app file
+          APP_PATH=$(find /Users/runner/Library/Developer/Xcode/DerivedData -name "*.app" -type d | head -1)
 
-          # Create Payload directory
+          if [ -z "$APP_PATH" ]; then
+            echo "Error: .app file not found"
+            exit 1
+          fi
+
+          echo "Found app at: $APP_PATH"
+
+          # Create IPA
           mkdir -p ./build/Payload
           cp -R "$APP_PATH" ./build/Payload/
-
-          # Create IPA using zip
           cd ./build
-          zip -qr "$IPA_PATH" Payload
+          zip -qr VideoPlayer-Simulator.ipa Payload
           cd ..
+
+          echo "IPA created at: ./build/VideoPlayer-Simulator.ipa"
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          name: VideoPlayer-ipa
-          path: build/VideoPlayer.ipa
-
-      - name: Upload xcarchive
-        uses: actions/upload-artifact@v4
-        with:
-          name: VideoPlayer-xcarchive
-          path: build/VideoPlayer.xcarchive
+          name: VideoPlayer-Simulator-IPA
+          path: build/VideoPlayer-Simulator.ipa
+          retention-days: 7
