@@ -223,7 +223,7 @@ actor CacheSystem: CacheSystemProtocol {
         if let data = convertAnyToData(value) {
             Task {
                 diskStorage.writeData(data, forKey: compositeKey, category: category)
-                await scheduleCleanupIfNeeded()
+                scheduleCleanupIfNeeded()
             }
         }
     }
@@ -309,7 +309,7 @@ actor CacheSystem: CacheSystemProtocol {
         // 异步写入磁盘 - 使用 Task 避免阻塞 actor
         Task {
             diskStorage.writeData(data, forKey: compositeKey, category: category)
-            await scheduleCleanupIfNeeded()
+            scheduleCleanupIfNeeded()
         }
     }
     
@@ -762,9 +762,6 @@ extension CacheSystem {
                 } else {
                     data = image.pngData()
                 }
-            } else if let ciImage = image.ciImage {
-                // CIImage 的情况 - 默认使用 PNG（简化处理）
-                data = image.pngData()
             } else {
                 // 默认使用 PNG
                 data = image.pngData()

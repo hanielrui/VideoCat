@@ -69,18 +69,18 @@ final class ImageCache: ImageCacheProtocol {
 // MARK: - UIImageView 扩展
 extension UIImageView {
 
-    private static var imageCacheKey = "imageCacheKey"
-    private static var customImageCacheKey = "customImageCacheKey"
+    private static var customImageCacheKey: UInt8 = 0
+    private static var imageCacheKey: UInt8 = 0
 
     /// 自定义图片缓存实例（通过依赖注入设置）
     private var injectedImageCache: ImageCacheProtocol? {
-        get { objc_getAssociatedObject(self, &UIImageView.customImageCacheKey) as? ImageCacheProtocol }
-        set { objc_setAssociatedObject(self, &UIImageView.customImageCacheKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
+        get { objc_getAssociatedObject(self, &Self.customImageCacheKey) as? ImageCacheProtocol }
+        set { objc_setAssociatedObject(self, &Self.customImageCacheKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
     }
 
     private var imageTask: Task<Void, Never>? {
-        get { objc_getAssociatedObject(self, &UIImageView.imageCacheKey) as? Task<Void, Never> }
-        set { objc_setAssociatedObject(self, &UIImageView.imageCacheKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
+        get { objc_getAssociatedObject(self, &Self.imageCacheKey) as? Task<Void, Never> }
+        set { objc_setAssociatedObject(self, &Self.imageCacheKey, newValue, .OBJC_ASSOCIATION_RETAIN_NONATOMIC) }
     }
 
     /// 设置自定义图片缓存（用于依赖注入）

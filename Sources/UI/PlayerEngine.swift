@@ -266,21 +266,23 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
         timeObserver = player.addPeriodicTimeObserver(
             forInterval: interval,
             queue: .main
-        ) { @MainActor [weak self] time in
-            guard let self = self,
-                  let duration = self.player.currentItem?.duration.seconds,
-                  duration.isFinite && duration > 0 else { return }
+        ) { [weak self] time in
+            Task { @MainActor in
+                guard let self = self,
+                      let duration = self.player.currentItem?.duration.seconds,
+                      duration.isFinite && duration > 0 else { return }
 
-            let current = time.seconds
-            self.progressSubject.send((current, duration))
+                let current = time.seconds
+                self.progressSubject.send((current, duration))
 
-            // 更新统一状态
-            self.updateUnifiedState(
-                status: self.unifiedStateSubject.value.status == .buffering ? .buffering :
-                       self.player.rate > 0 ? .playing : .paused,
-                currentTime: current,
-                duration: duration
-            )
+                // 更新统一状态
+                self.updateUnifiedState(
+                    status: self.unifiedStateSubject.value.status == .buffering ? .buffering :
+                           self.player.rate > 0 ? .playing : .paused,
+                    currentTime: current,
+                    duration: duration
+                )
+            }
         }
     }
 
@@ -293,16 +295,18 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
 
     private func setupRateObserver() {
         rateObserver?.invalidate()
-        rateObserver = player.observe(\.rate, options: [.new]) { @MainActor [weak self] player, _ in
-            guard let self = self else { return }
+        rateObserver = player.observe(\.rate, options: [.new]) { [weak self] player, _ in
+            Task { @MainActor in
+                guard let self = self else { return }
 
-            if player.rate == 0 {
-                if self.unifiedStateSubject.value.status != .buffering {
-                    self.updateUnifiedState(status: .paused)
+                if player.rate == 0 {
+                    if self.unifiedStateSubject.value.status != .buffering {
+                        self.updateUnifiedState(status: .paused)
+                    }
+                    Logger.debug("Playback rate became 0")
+                } else {
+                    self.updateUnifiedState(status: .playing)
                 }
-                Logger.debug("Playback rate became 0")
-            } else {
-                self.updateUnifiedState(status: .playing)
             }
         }
     }
@@ -310,19 +314,23 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
     private func setupStatusObserver(item: AVPlayerItem) {
         statusObserver?.invalidate()
 
-        statusObserver = item.observe(\.status, options: [.new]) { @MainActor [weak self] item, _ in
-            switch item.status {
-            case .readyToPlay:
-                Logger.debug("Player ready to play")
-            case .failed:
-                let error = item.error
-                Logger.error("Player status failed: \(error?.localizedDescription ?? "Unknown")")
-                self?.errorSubject.send(.loadFailed(error))
-                self?.updateUnifiedState(status: .error, error: .loadFailed(error))
-            case .unknown:
-                break
-            @unknown default:
-                break
+        statusObserver = item.observe(\.status, options: [.new]) { [weak self] item, _ in
+            Task { @MainActor in
+                guard let self = self else { return }
+
+                switch item.status {
+                case .readyToPlay:
+                    Logger.debug("Player ready to play")
+                case .failed:
+                    let error = item.error
+                    Logger.error("Player status failed: \(error?.localizedDescription ?? "Unknown")")
+                    self.errorSubject.send(.loadFailed(error))
+                    self.updateUnifiedState(status: .error, error: .loadFailed(error))
+                case .unknown:
+                    break
+                @unknown default:
+                    break
+                }
             }
         }
     }
@@ -330,19 +338,21 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
     private func setupBufferingObserver(item: AVPlayerItem) {
         bufferingObserver?.invalidate()
 
-        bufferingObserver = item.observe(\.isPlaybackLikelyToKeepUp, options: [.new]) { @MainActor [weak self] item, _ in
-            guard let self = self else { return }
+        bufferingObserver = item.observe(\.isPlaybackLikelyToKeepUp, options: [.new]) { [weak self] item, _ in
+            Task { @MainActor in
+                guard let self = self else { return }
 
-            let isBuffering = !item.isPlaybackLikelyToKeepUp
-            self.bufferingSubject.send(isBuffering)
+                let isBuffering = !item.isPlaybackLikelyToKeepUp
+                self.bufferingSubject.send(isBuffering)
 
-            if isBuffering {
-                self.updateUnifiedState(status: .buffering)
-            } else if self.player.rate > 0 {
-                self.updateUnifiedState(status: .playing)
+                if isBuffering {
+                    self.updateUnifiedState(status: .buffering)
+                } else if self.player.rate > 0 {
+                    self.updateUnifiedState(status: .playing)
+                }
+
+                Logger.debug("Buffering: \(isBuffering)")
             }
-
-            Logger.debug("Buffering: \(isBuffering)")
         }
     }
 
@@ -353,9 +363,11 @@ final class PlayerEngine: NSObject, PlayerEngineProtocol, Player {
             forName: .AVPlayerItemDidPlayToEndTime,
             object: item,
             queue: .main
-        ) { @MainActor [weak self] _ in
-            self?.updateUnifiedState(status: .ended)
-            Logger.info("Playback ended")
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.updateUnifiedState(status: .ended)
+                Logger.info("Playback ended")
+            }
         }
     }
 

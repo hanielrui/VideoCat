@@ -174,15 +174,13 @@ actor PlayerPreloader {
             AVURLAssetPreferPreciseDurationAndTimingKey: true
         ])
 
-        let keys = ["playable", "duration", "tracks"]
-
-        // 使用 async let 并行加载多个 key
+        // 使用 async let 并行加载多个属性
         async let playableStatus = asset.load(.isPlayable)
         async let durationStatus = asset.load(.duration)
         async let tracksStatus = asset.load(.tracks)
 
         do {
-            let (isPlayable, duration, tracks) = try await (playableStatus, durationStatus, tracksStatus)
+            let (isPlayable, _, _) = try await (playableStatus, durationStatus, tracksStatus)
 
             if isPlayable {
                 preloadTasks[key] = asset
