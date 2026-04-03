@@ -363,7 +363,6 @@ class PlayerViewController: UIViewController {
     // MARK: - 清理
     deinit {
         controlsAutoHideTimer?.invalidate()
-        stopPlayback()
         cancellables.removeAll()
         NotificationCenter.default.removeObserver(self)
 

@@ -207,13 +207,14 @@ actor CacheSystem: CacheSystemProtocol {
             await startLifecycle()
         }
     }
-    
+
     // MARK: - 统一存储接口
     func get<T>(forKey key: String, category: CacheCategory) async -> T? {
         let compositeKey = makeKey(key, category: category)
 
         // 1. 内存缓存优先
-        if let value: T = memoryStorage.object(forKey: compositeKey) as? T {
+        let obj = memoryStorage.object(forKey: compositeKey)
+        if let value = obj as? T {
             recordHit()
             updateAccessTime(compositeKey, category: category)
             return value
@@ -221,8 +222,8 @@ actor CacheSystem: CacheSystemProtocol {
 
         // 2. 磁盘缓存
         if let data = diskStorage.readData(forKey: compositeKey, category: category) {
-            // 回填内存
-            if let value = convertFromData(data, type: T.self) {
+            // 回填内存 - 使用类型检查来处理不同类型
+            if let value = convertFromAny(data, targetType: T.self) {
                 memoryStorage.set(value as AnyObject, forKey: compositeKey, cost: data.count)
                 recordHit()
                 updateAccessTime(compositeKey, category: category)
@@ -243,14 +244,14 @@ actor CacheSystem: CacheSystemProtocol {
         // 异步写入磁盘（Data 类型）- 使用 Task 避免阻塞 actor
         // 注意：磁盘存储不受 cost 参数影响，成本仅应用于内存缓存
         // 如果快速连续写入同一 key，磁盘写入是异步的，可能存在竞态条件
-        if let data = convertToData(value) {
+        if let data = convertAnyToData(value) {
             Task {
                 diskStorage.writeData(data, forKey: compositeKey, category: category)
                 await scheduleCleanupIfNeeded()
             }
         }
     }
-    
+
 
     
     func getData(forKey key: String, category: CacheCategory) async -> Data? {
@@ -428,7 +429,7 @@ actor CacheSystem: CacheSystemProtocol {
         stateSubject.send(.ready)
         Logger.debug("[CacheSystem] Cleanup completed, current size: \(diskStorage.totalSize())")
     }
-    
+
     // MARK: - 数据转换
 
     private func convertToData<T: Encodable>(_ value: T) -> Data? {
@@ -449,6 +450,27 @@ actor CacheSystem: CacheSystemProtocol {
             return String(data: data, encoding: .utf8) as? T
         }
         return try? JSONDecoder().decode(type, from: data)
+    }
+
+    // 通用类型转换方法，不依赖泛型约束
+    private func convertAnyToData(_ value: Any) -> Data? {
+        if let data = value as? Data {
+            return data
+        }
+        if let string = value as? String {
+            return string.data(using: .utf8)
+        }
+        return nil
+    }
+
+    private func convertFromAny<T>(_ data: Data, targetType: T.Type) -> T? {
+        if targetType == Data.self {
+            return data as? T
+        }
+        if targetType == String.self {
+            return String(data: data, encoding: .utf8) as? T
+        }
+        return nil
     }
 }
 

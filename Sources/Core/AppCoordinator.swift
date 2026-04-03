@@ -126,7 +126,7 @@ final class AppCoordinator: AppCoordinatorProtocol {
     func navigateToPlayer(with item: MediaItem) {
         // 通过依赖注入获取播放 URL
         guard let urlString = container.jellyfinAPI.getPlayURL(itemId: item.id),
-              let url = URL(string: urlString) else {
+              let _ = URL(string: urlString) else {
             Logger.error("Failed to build playback URL for item: \(item.id)")
             return
         }

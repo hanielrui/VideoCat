@@ -112,7 +112,9 @@ actor PlayerPool {
     /// 预加载播放器
     private func preloadPlayers(count: Int) async {
         for _ in 0..<count {
-            let player = PlayerEngine()
+            let player = await MainActor.run {
+                PlayerEngine()
+            }
             pool.append(player)
         }
         Logger.debug("Preloaded \(count) players")
@@ -122,12 +124,16 @@ actor PlayerPool {
 
     /// 清空池（释放所有播放器）
     func clearPool() async {
-        pool.forEach { cleanupPlayer($0) }
+        for player in pool {
+            await cleanupPlayer(player)
+        }
         pool.removeAll()
-        
-        inUsePlayers.values.forEach { cleanupPlayer($0) }
+
+        for player in inUsePlayers.values {
+            await cleanupPlayer(player)
+        }
         inUsePlayers.removeAll()
-        
+
         Logger.info("Player pool cleared")
     }
 
