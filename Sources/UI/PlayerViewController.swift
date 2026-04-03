@@ -234,9 +234,11 @@ class PlayerViewController: UIViewController {
             withTimeInterval: 3.0,
             repeats: false
         ) { [weak self] _ in
-            guard let self = self,
-                  self.viewModel.isPlaying else { return }
-            self.hideControls()
+            Task { @MainActor in
+                guard let self = self,
+                      self.viewModel.isPlaying else { return }
+                self.hideControls()
+            }
         }
     }
 
