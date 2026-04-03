@@ -209,6 +209,26 @@ actor CacheSystem: CacheSystemProtocol {
     }
 
     // MARK: - 统一存储接口
+
+    // 泛型存储方法 - 支持 AnyObject 和 Encodable
+    func set<T>(_ value: T, forKey key: String, category: CacheCategory, cost: Int?) async {
+        let compositeKey = makeKey(key, category: category)
+
+        // 内存缓存（受 cost 参数控制）
+        memoryStorage.set(value as AnyObject, forKey: compositeKey, cost: cost)
+
+        // 异步写入磁盘（Data 类型）- 使用 Task 避免阻塞 actor
+        // 注意：磁盘存储不受 cost 参数影响，成本仅应用于内存缓存
+        // 如果快速连续写入同一 key，磁盘写入是异步的，可能存在竞态条件
+        if let data = convertAnyToData(value) {
+            Task {
+                diskStorage.writeData(data, forKey: compositeKey, category: category)
+                await scheduleCleanupIfNeeded()
+            }
+        }
+    }
+
+    // 泛型读取方法 - 支持 AnyObject 和 Decodable
     func get<T>(forKey key: String, category: CacheCategory) async -> T? {
         let compositeKey = makeKey(key, category: category)
 
@@ -223,7 +243,7 @@ actor CacheSystem: CacheSystemProtocol {
         // 2. 磁盘缓存
         if let data = diskStorage.readData(forKey: compositeKey, category: category) {
             // 回填内存 - 使用类型检查来处理不同类型
-            if let value = convertFromData(data, type: T.self) {
+            if let value = convertFromAny(data, targetType: T.self) {
                 memoryStorage.set(value as AnyObject, forKey: compositeKey, cost: data.count)
                 recordHit()
                 updateAccessTime(compositeKey, category: category)
@@ -235,7 +255,29 @@ actor CacheSystem: CacheSystemProtocol {
         return nil
     }
 
-    func set<T>(_ value: T, forKey key: String, category: CacheCategory, cost: Int?) async {
+    // MARK: - 数据转换（内部使用，带协议约束）
+
+    private func convertToData<T: Encodable>(_ value: T) -> Data? {
+        if let data = value as? Data {
+            return data
+        }
+        if let string = value as? String {
+            return string.data(using: .utf8)
+        }
+        return try? JSONEncoder().encode(value)
+    }
+
+    private func convertFromData<T: Decodable>(_ data: Data, type: T.Type) -> T? {
+        if type == Data.self {
+            return data as? T
+        }
+        if type == String.self {
+            return String(data: data, encoding: .utf8) as? T
+        }
+        return try? JSONDecoder().decode(type, from: data)
+    }
+
+    // MARK: - 通用类型转换方法，不依赖泛型约束
         let compositeKey = makeKey(key, category: category)
 
         // 内存缓存（受 cost 参数控制）
