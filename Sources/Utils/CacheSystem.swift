@@ -213,8 +213,8 @@ actor CacheSystem: CacheSystemProtocol {
         let compositeKey = makeKey(key, category: category)
 
         // 1. 内存缓存优先
-        let obj = memoryStorage.object(forKey: compositeKey)
-        if let value = obj as? T {
+        let obj: T? = memoryStorage.object(forKey: compositeKey)
+        if let value = obj {
             recordHit()
             updateAccessTime(compositeKey, category: category)
             return value
